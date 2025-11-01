@@ -373,9 +373,9 @@ export function EpubReader({ epubId, filePath, title, onClose }: EpubReaderProps
         </div>
 
         {/* Content */}
-        <div className="p-2 md:p-4 flex-1 overflow-y-auto">
+        <div className="p-1 md:p-4 flex-1 overflow-y-auto">
           {/* Page Content with Sentence Highlighting */}
-          <div className="rounded-lg p-2 md:p-4 mb-2 md:mb-3 min-h-[250px] md:min-h-[400px] flex flex-col transition-colors" style={{ backgroundColor: 'var(--hover-bg)' }}>
+          <div className="rounded-lg p-1 md:p-4 mb-2 md:mb-3 flex flex-col transition-colors" style={{ backgroundColor: 'var(--hover-bg)' }}>
             <div className="flex-1 overflow-hidden">
               <SentenceHighlight
                 sentences={sentences}

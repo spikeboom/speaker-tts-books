@@ -62,10 +62,11 @@ export function SentenceHighlight({
   return (
     <div
       ref={containerRef}
-      className="w-full min-h-[300px] p-6 border-2 rounded-lg overflow-y-auto max-h-[500px] transition-colors"
+      className="w-full min-h-[300px] p-3 md:p-6 border-2 rounded-lg overflow-y-auto transition-colors"
       style={{
         borderColor: 'var(--border-color)',
         backgroundColor: 'var(--card-bg)',
+        maxHeight: 'min(500px, calc(100vh - 280px))',
       }}
     >
       <div className="text-lg leading-relaxed" style={{ whiteSpace: 'pre-wrap', color: 'var(--input-text)' }}>
