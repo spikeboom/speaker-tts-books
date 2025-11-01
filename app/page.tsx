@@ -1,65 +1,110 @@
-import Image from "next/image";
+'use client';
+
+import { TextInput } from './components/TextInput';
+import { PlaybackControls } from './components/PlaybackControls';
+import { VoiceSettings } from './components/VoiceSettings';
+import { SentenceHighlight } from './components/SentenceHighlight';
+import { useSentenceReader } from './hooks/useSentenceReader';
 
 export default function Home() {
+  const {
+    text,
+    setText,
+    sentences,
+    currentSentenceIndex,
+    isPlaying,
+    isPaused,
+    voices,
+    selectedVoice,
+    setSelectedVoice,
+    rate,
+    setRate,
+    pitch,
+    setPitch,
+    volume,
+    setVolume,
+    handlePlay,
+    handlePause,
+    handleStop,
+    handleReset,
+  } = useSentenceReader();
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-8">
+      <div className="max-w-4xl mx-auto">
+        <h1 className="text-4xl font-bold text-gray-800 mb-8 text-center">
+          📖 Leitor de Texto com TTS
+        </h1>
+
+        <div className="bg-white rounded-lg shadow-xl p-6 mb-6">
+          <TextInput value={text} onChange={setText} disabled={isPlaying && !isPaused} />
+
+          <div className="mt-6">
+            <PlaybackControls
+              isPlaying={isPlaying}
+              isPaused={isPaused}
+              onPlay={handlePlay}
+              onPause={handlePause}
+              onStop={handleStop}
+              onReset={handleReset}
+              showReset={true}
+            />
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg shadow-xl p-6 mb-6">
+          <h2 className="text-2xl font-semibold text-gray-800 mb-4">
+            📄 Visualização de Leitura
+          </h2>
+          <div className="mb-2 text-sm text-gray-600">
+            <span className="font-semibold">
+              Frase {currentSentenceIndex + 1} de {sentences.length}
+            </span>
+            {isPaused && (
+              <span className="ml-4 text-yellow-600 font-semibold">
+                ⏸️ Pausado - ao retomar, continuará da frase atual
+              </span>
+            )}
+          </div>
+          <SentenceHighlight
+            sentences={sentences}
+            currentSentenceIndex={currentSentenceIndex}
+            isPlaying={isPlaying}
+            isPaused={isPaused}
+          />
+        </div>
+
+        <div className="bg-white rounded-lg shadow-xl p-6">
+          <VoiceSettings
+            voices={voices}
+            selectedVoice={selectedVoice}
+            onVoiceChange={setSelectedVoice}
+            rate={rate}
+            onRateChange={setRate}
+            pitch={pitch}
+            onPitchChange={setPitch}
+            volume={volume}
+            onVolumeChange={setVolume}
+          />
+        </div>
+
+        <div className="mt-6 bg-blue-50 rounded-lg p-4 border-2 border-blue-200">
+          <h3 className="text-lg font-semibold text-gray-800 mb-2">
+            ℹ️ Como usar
+          </h3>
+          <ul className="text-sm text-gray-700 space-y-1 list-disc list-inside">
+            <li>Cole ou digite seu texto no campo acima</li>
+            <li>Clique em <strong>Reproduzir</strong> para iniciar a leitura frase por frase</li>
+            <li>Use <strong>Pausar</strong> para salvar o progresso - ao retomar, continua da mesma frase</li>
+            <li>Se parar no meio de uma frase, ao dar play volta para o início dessa frase</li>
+            <li>Use <strong>Resetar</strong> para voltar ao início do texto</li>
+            <li>A frase atual é destacada em amarelo durante a leitura</li>
+          </ul>
+          <p className="mt-3 text-xs text-gray-600">
+            💡 Este leitor usa a Web Speech API nativa do navegador (funciona melhor no Chrome, Edge e Safari)
           </p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+      </div>
     </div>
   );
 }
