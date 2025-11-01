@@ -86,11 +86,18 @@ export function useSentenceReader() {
       const availableVoices = window.speechSynthesis.getVoices();
       setVoices(availableVoices);
 
-      const ptVoice = availableVoices.find(voice => voice.lang.startsWith('pt'));
-      if (ptVoice) {
-        setSelectedVoice(ptVoice.name);
-      } else if (availableVoices.length > 0) {
-        setSelectedVoice(availableVoices[0].name);
+      // Prioritize en-US voices
+      const enUSVoice = availableVoices.find(voice => voice.lang.startsWith('en-US'));
+      if (enUSVoice) {
+        setSelectedVoice(enUSVoice.name);
+      } else {
+        // Fallback to any English voice
+        const enVoice = availableVoices.find(voice => voice.lang.startsWith('en'));
+        if (enVoice) {
+          setSelectedVoice(enVoice.name);
+        } else if (availableVoices.length > 0) {
+          setSelectedVoice(availableVoices[0].name);
+        }
       }
     };
 
@@ -246,6 +253,45 @@ export function useSentenceReader() {
     localStorage.removeItem('tts-reader-progress');
   }, []);
 
+  // Function to set sentence index (for loading saved position)
+  const setCurrentSentence = useCallback((index: number) => {
+    if (index >= 0 && index < sentences.length) {
+      setCurrentSentenceIndex(index);
+    }
+  }, [sentences.length]);
+
+  // Navigate to previous sentence
+  const previousSentence = useCallback(() => {
+    if (currentSentenceIndex > 0) {
+      const newIndex = currentSentenceIndex - 1;
+      setCurrentSentenceIndex(newIndex);
+
+      // If playing, speak the new sentence
+      if (isPlaying) {
+        window.speechSynthesis.cancel();
+        speakSentence(newIndex);
+      }
+      // If paused, just update the index (visual highlight will update)
+      // If stopped, just update the index so Play will start from here
+    }
+  }, [currentSentenceIndex, isPlaying, speakSentence]);
+
+  // Navigate to next sentence
+  const nextSentence = useCallback(() => {
+    if (currentSentenceIndex < sentences.length - 1) {
+      const newIndex = currentSentenceIndex + 1;
+      setCurrentSentenceIndex(newIndex);
+
+      // If playing, speak the new sentence
+      if (isPlaying) {
+        window.speechSynthesis.cancel();
+        speakSentence(newIndex);
+      }
+      // If paused, just update the index (visual highlight will update)
+      // If stopped, just update the index so Play will start from here
+    }
+  }, [currentSentenceIndex, sentences.length, isPlaying, speakSentence]);
+
   return {
     text,
     setText,
@@ -266,5 +312,8 @@ export function useSentenceReader() {
     handlePause,
     handleStop,
     handleReset,
+    setCurrentSentence,
+    previousSentence,
+    nextSentence,
   };
 }

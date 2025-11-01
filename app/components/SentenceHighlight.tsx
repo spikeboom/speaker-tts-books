@@ -27,8 +27,8 @@ export function SentenceHighlight({
     <div className="w-full min-h-[300px] p-6 border-2 border-gray-300 rounded-lg bg-white overflow-y-auto max-h-[500px]">
       <div className="text-lg leading-relaxed text-gray-800" style={{ whiteSpace: 'pre-wrap' }}>
         {sentences.map((sentence, index) => {
-          const isCurrentSentence = index === currentSentenceIndex && (isPlaying || isPaused);
-          const isSavedSentence = savedSentenceIndex !== undefined && index === savedSentenceIndex && !isPlaying && !isPaused;
+          const isCurrentSentence = index === currentSentenceIndex;
+          const isSavedSentence = savedSentenceIndex !== undefined && index === savedSentenceIndex && !isPlaying && !isPaused && index !== currentSentenceIndex;
 
           return (
             <span
@@ -41,6 +41,10 @@ export function SentenceHighlight({
                 }
                 ${isCurrentSentence && isPaused
                   ? 'bg-orange-200 font-semibold text-gray-900 px-1 rounded border-2 border-orange-400'
+                  : ''
+                }
+                ${isCurrentSentence && !isPlaying && !isPaused
+                  ? 'bg-blue-100 font-semibold text-gray-900 px-1 rounded border-2 border-blue-400'
                   : ''
                 }
                 ${isSavedSentence

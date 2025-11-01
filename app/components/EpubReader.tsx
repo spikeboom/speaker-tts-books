@@ -54,6 +54,9 @@ export function EpubReader({ epubId, filePath, title, onClose }: EpubReaderProps
     handlePause,
     handleStop,
     handleReset,
+    setCurrentSentence,
+    previousSentence,
+    nextSentence,
   } = useSentenceReader();
 
 
@@ -75,13 +78,13 @@ export function EpubReader({ epubId, filePath, title, onClose }: EpubReaderProps
   // Load saved sentence position when progress is loaded
   useEffect(() => {
     if (savedProgress && savedProgress.current_page === currentPage && sentences.length > 0) {
-      // Scroll to saved sentence
+      // Set the current sentence to the saved position
       const sentenceIndex = Math.min(savedProgress.current_sentence, sentences.length - 1);
       if (sentenceIndex >= 0) {
-        // Visual feedback that we're at saved position will be handled by the UI
+        setCurrentSentence(sentenceIndex);
       }
     }
-  }, [savedProgress, currentPage, sentences.length]);
+  }, [savedProgress, currentPage, sentences.length, setCurrentSentence]);
 
   // Handle page navigation
   const handleNextPage = () => {
@@ -262,12 +265,30 @@ export function EpubReader({ epubId, filePath, title, onClose }: EpubReaderProps
 
           {/* Page Content with Sentence Highlighting */}
           <div className="bg-gray-50 rounded-lg p-6 mb-6 min-h-[400px]">
-            <div className="mb-2 text-sm text-gray-600 flex items-center justify-between">
-              <span className="font-semibold">
-                Frase {currentSentenceIndex + 1} de {sentences.length}
-              </span>
+            <div className="mb-4 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={previousSentence}
+                  disabled={currentSentenceIndex === 0}
+                  className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed font-semibold text-sm transition-colors"
+                  title="Frase anterior"
+                >
+                  ⏪ Anterior
+                </button>
+                <span className="text-sm text-gray-600 font-semibold">
+                  Frase {currentSentenceIndex + 1} de {sentences.length}
+                </span>
+                <button
+                  onClick={nextSentence}
+                  disabled={currentSentenceIndex === sentences.length - 1}
+                  className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed font-semibold text-sm transition-colors"
+                  title="Próxima frase"
+                >
+                  Próxima ⏩
+                </button>
+              </div>
               {isPaused && (
-                <span className="ml-4 text-yellow-600 font-semibold">
+                <span className="text-yellow-600 font-semibold text-sm">
                   ⏸️ Pausado - ao retomar, continuará da frase atual
                 </span>
               )}

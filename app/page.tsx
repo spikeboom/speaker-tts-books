@@ -40,6 +40,8 @@ export default function Home() {
     handlePause,
     handleStop,
     handleReset,
+    previousSentence,
+    nextSentence,
   } = useSentenceReader();
 
   const {
@@ -219,12 +221,30 @@ export default function Home() {
           <h2 className="text-2xl font-semibold text-gray-800 mb-4">
             📄 Visualização de Leitura
           </h2>
-          <div className="mb-2 text-sm text-gray-600">
-            <span className="font-semibold">
-              Frase {currentSentenceIndex + 1} de {sentences.length}
-            </span>
+          <div className="mb-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={previousSentence}
+                disabled={currentSentenceIndex === 0}
+                className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed font-semibold text-sm transition-colors"
+                title="Frase anterior"
+              >
+                ⏪ Anterior
+              </button>
+              <span className="text-sm text-gray-600 font-semibold">
+                Frase {currentSentenceIndex + 1} de {sentences.length}
+              </span>
+              <button
+                onClick={nextSentence}
+                disabled={currentSentenceIndex === sentences.length - 1}
+                className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed font-semibold text-sm transition-colors"
+                title="Próxima frase"
+              >
+                Próxima ⏩
+              </button>
+            </div>
             {isPaused && (
-              <span className="ml-4 text-yellow-600 font-semibold">
+              <span className="text-yellow-600 font-semibold text-sm">
                 ⏸️ Pausado - ao retomar, continuará da frase atual
               </span>
             )}
