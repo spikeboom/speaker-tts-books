@@ -290,66 +290,6 @@ export function EpubReader({ epubId, filePath, title, onClose }: EpubReaderProps
           </button>
         </div>
 
-        {/* Sentence Navigation */}
-        <div className="mb-2 flex items-center justify-between flex-shrink-0 px-2 md:px-3 py-1 md:py-2">
-          <div className="flex items-center gap-1 md:gap-2">
-            <button
-              onClick={previousSentence}
-              disabled={currentSentenceIndex === 0}
-              className="px-1.5 md:px-2 py-0.5 md:py-1 rounded font-semibold text-xs transition-colors"
-              style={{
-                backgroundColor: currentSentenceIndex === 0 ? 'var(--gray-300)' : 'var(--blue-light)',
-                color: 'var(--button-text)',
-                cursor: currentSentenceIndex === 0 ? 'not-allowed' : 'pointer',
-              }}
-              onMouseEnter={(e) => {
-                if (currentSentenceIndex !== 0) {
-                  (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--blue-dark)';
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (currentSentenceIndex !== 0) {
-                  (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--blue-light)';
-                }
-              }}
-              title="Frase anterior"
-            >
-              ⏪
-            </button>
-            <span className="text-xs md:text-sm font-semibold whitespace-nowrap transition-colors" style={{ color: 'var(--text-secondary)' }}>
-              {currentSentenceIndex + 1}/{sentences.length}
-            </span>
-            <button
-              onClick={nextSentence}
-              disabled={currentSentenceIndex === sentences.length - 1}
-              className="px-1.5 md:px-2 py-0.5 md:py-1 rounded font-semibold text-xs transition-colors"
-              style={{
-                backgroundColor: currentSentenceIndex === sentences.length - 1 ? 'var(--gray-300)' : 'var(--blue-light)',
-                color: 'var(--button-text)',
-                cursor: currentSentenceIndex === sentences.length - 1 ? 'not-allowed' : 'pointer',
-              }}
-              onMouseEnter={(e) => {
-                if (currentSentenceIndex !== sentences.length - 1) {
-                  (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--blue-dark)';
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (currentSentenceIndex !== sentences.length - 1) {
-                  (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--blue-light)';
-                }
-              }}
-              title="Próxima frase"
-            >
-              ⏩
-            </button>
-          </div>
-          {isPaused && (
-            <span className="font-semibold text-xs md:text-sm transition-colors" style={{ color: 'var(--yellow-dark)' }}>
-              ⏸️ Pausado
-            </span>
-          )}
-        </div>
-
         {/* Saved Progress Indicator - Compact */}
         {savedProgress && (
           <div
@@ -387,6 +327,7 @@ export function EpubReader({ epubId, filePath, title, onClose }: EpubReaderProps
                     ? savedProgress.current_sentence
                     : undefined
                 }
+                onSentenceClick={setCurrentSentence}
               />
             </div>
           </div>

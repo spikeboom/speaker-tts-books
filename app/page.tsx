@@ -41,6 +41,7 @@ export default function Home() {
     handlePause,
     handleStop,
     handleReset,
+    setCurrentSentence,
     previousSentence,
     nextSentence,
   } = useSentenceReader();
@@ -351,6 +352,7 @@ export default function Home() {
             currentSentenceIndex={currentSentenceIndex}
             isPlaying={isPlaying}
             isPaused={isPaused}
+            onSentenceClick={setCurrentSentence}
           />
         </div>
 
