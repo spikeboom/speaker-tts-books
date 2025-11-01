@@ -144,7 +144,8 @@ export function useSentenceReader() {
       utterance.voice = voice;
       // Required for Android Chrome to properly change voice
       utterance.lang = voice.lang;
-      utterance.voiceURI = voice.voiceURI;
+      // voiceURI is not in TypeScript's type definitions but is needed for Android Chrome
+      (utterance as any).voiceURI = voice.voiceURI;
     }
 
     utterance.rate = rate;
