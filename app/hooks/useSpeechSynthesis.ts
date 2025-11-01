@@ -17,11 +17,8 @@ export function useSpeechSynthesis() {
       const availableVoices = window.speechSynthesis.getVoices();
       setVoices(availableVoices);
 
-      // Select first Portuguese voice if available, otherwise first voice
-      const ptVoice = availableVoices.find(voice => voice.lang.startsWith('pt'));
-      if (ptVoice) {
-        setSelectedVoice(ptVoice.name);
-      } else if (availableVoices.length > 0) {
+      // Select first voice without language preference
+      if (availableVoices.length > 0) {
         setSelectedVoice(availableVoices[0].name);
       }
     };
