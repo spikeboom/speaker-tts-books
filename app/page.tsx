@@ -14,8 +14,12 @@ import ThemeToggle from './components/ThemeToggle';
 import { useSentenceReader } from './hooks/useSentenceReader';
 import { useTexts } from './hooks/useTexts';
 import { useEpubs, Epub } from './hooks/useEpubs';
+import { useWakeLock } from './hooks/useWakeLock';
 
 export default function Home() {
+  // Keep screen on while using the app
+  useWakeLock();
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentTextId, setCurrentTextId] = useState<string | undefined>(undefined);
   const [activeTab, setActiveTab] = useState<'texts' | 'epubs'>('texts');

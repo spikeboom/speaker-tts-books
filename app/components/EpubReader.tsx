@@ -2,6 +2,7 @@
 
 import { useEpubReader } from '../hooks/useEpubReader';
 import { useSentenceReader } from '../hooks/useSentenceReader';
+import { useWakeLock } from '../hooks/useWakeLock';
 import { PlaybackControls } from './PlaybackControls';
 import { VoiceSettings } from './VoiceSettings';
 import { SentenceHighlight } from './SentenceHighlight';
@@ -16,6 +17,9 @@ interface EpubReaderProps {
 }
 
 export function EpubReader({ epubId, filePath, title, onClose }: EpubReaderProps) {
+  // Keep screen on while reading
+  useWakeLock();
+
   const {
     loading,
     error,
