@@ -127,10 +127,7 @@ export function useSentenceReader() {
 
   // Speak current sentence
   const speakSentence = useCallback((index: number) => {
-    console.log('🔵 [DEBUG] speakSentence chamado - index:', index, 'total sentences:', sentences.length);
-
     if (index >= sentences.length || index < 0) {
-      console.log('🔴 [DEBUG] Índice inválido, parando reprodução');
       setIsPlaying(false);
       setIsPaused(false);
       return;
@@ -138,10 +135,7 @@ export function useSentenceReader() {
 
     // Only cancel if something is actually speaking
     if (window.speechSynthesis.speaking) {
-      console.log('🟡 [DEBUG] Cancelando fala anterior');
       window.speechSynthesis.cancel();
-    } else {
-      console.log('🟢 [DEBUG] Nada tocando, não precisa cancelar');
     }
 
     const utterance = new SpeechSynthesisUtterance(sentences[index]);
@@ -155,7 +149,6 @@ export function useSentenceReader() {
     utterance.volume = volume;
 
     utterance.onstart = () => {
-      console.log('🟢 [DEBUG] onstart - index:', index, 'isPausingRef:', isPausingRef.current);
       if (isPausingRef.current) return;
       setIsPlaying(true);
       setIsPaused(false);
@@ -169,28 +162,21 @@ export function useSentenceReader() {
     };
 
     utterance.onend = () => {
-      console.log('🏁 [DEBUG] onend - index:', index, 'isPausingRef:', isPausingRef.current);
       if (isPausingRef.current) {
-        console.log('⏸️ [DEBUG] isPausingRef ativo, não avançando');
         isPausingRef.current = false;
         return;
       }
       // Move to next sentence
       const nextIndex = index + 1;
-      console.log('➡️ [DEBUG] Tentando avançar para próxima frase - nextIndex:', nextIndex, 'sentences.length:', sentences.length);
       if (nextIndex < sentences.length) {
-        console.log('✅ [DEBUG] Avançando para frase', nextIndex);
         setCurrentSentenceIndex(nextIndex);
         characterPositionRef.current = 0;
         saveProgress();
         // Add small delay to let browser finish processing previous utterance
-        console.log('⏱️ [DEBUG] Aguardando 100ms antes de tocar próxima frase');
         setTimeout(() => {
-          console.log('🔄 [DEBUG] Timeout concluído, tocando frase', nextIndex);
           speakSentence(nextIndex);
         }, 100);
       } else {
-        console.log('🏆 [DEBUG] Fim do texto alcançado');
         setIsPlaying(false);
         setIsPaused(false);
         setCurrentSentenceIndex(0);
@@ -200,7 +186,6 @@ export function useSentenceReader() {
     };
 
     utterance.onerror = (event) => {
-      console.log('❌ [DEBUG] onerror:', event, 'isPausingRef:', isPausingRef.current);
       if (isPausingRef.current) {
         isPausingRef.current = false;
         return;
@@ -211,12 +196,10 @@ export function useSentenceReader() {
     };
 
     utteranceRef.current = utterance;
-    console.log('🎤 [DEBUG] Iniciando speechSynthesis.speak');
     window.speechSynthesis.speak(utterance);
   }, [sentences, voices, selectedVoice, rate, pitch, volume, saveProgress]);
 
   const handlePlay = useCallback(() => {
-    console.log('▶️ [DEBUG] handlePlay - isPaused:', isPaused, 'currentSentenceIndex:', currentSentenceIndex);
     if (!text.trim()) {
       alert('Por favor, digite algum texto para ler.');
       return;
@@ -229,7 +212,6 @@ export function useSentenceReader() {
 
     if (isPaused) {
       // When resuming from pause, always start from beginning of current sentence
-      console.log('▶️ [DEBUG] Retomando de pausa');
       isPausingRef.current = false; // Clear the pausing flag
       setIsPaused(false);
       speakSentence(currentSentenceIndex);
@@ -237,17 +219,14 @@ export function useSentenceReader() {
     }
 
     // Start or restart from current sentence
-    console.log('▶️ [DEBUG] Iniciando reprodução');
     isPausingRef.current = false; // Clear the pausing flag
     speakSentence(currentSentenceIndex);
   }, [text, sentences, isPaused, currentSentenceIndex, speakSentence]);
 
   const handlePause = useCallback(() => {
-    console.log('⏸️ [DEBUG] handlePause - speaking:', window.speechSynthesis.speaking, 'isPlaying:', isPlaying);
     if (window.speechSynthesis.speaking || isPlaying) {
       // Set flag to prevent utterance events from changing state
       isPausingRef.current = true;
-      console.log('⏸️ [DEBUG] isPausingRef definido como true');
 
       // Cancel completely instead of pausing for more reliable behavior
       window.speechSynthesis.cancel();
@@ -263,7 +242,6 @@ export function useSentenceReader() {
   }, [saveProgress, isPlaying]);
 
   const handleStop = useCallback(() => {
-    console.log('⏹️ [DEBUG] handleStop');
     window.speechSynthesis.cancel();
     setIsPlaying(false);
     setIsPaused(false);
