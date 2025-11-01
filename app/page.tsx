@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { TextInput } from './components/TextInput';
 import { PlaybackControls } from './components/PlaybackControls';
 import { VoiceSettings } from './components/VoiceSettings';
@@ -74,9 +75,17 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-8">
       <div className="max-w-4xl mx-auto">
-        <h1 className="text-4xl font-bold text-gray-800 mb-8 text-center">
-          📖 Leitor de Texto com TTS
-        </h1>
+        <div className="flex items-center justify-between mb-8">
+          <h1 className="text-4xl font-bold text-gray-800">
+            📖 Leitor de Texto com TTS
+          </h1>
+          <Link
+            href="/epubs"
+            className="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 font-semibold shadow-md transition-colors flex items-center gap-2"
+          >
+            📚 EPUBs
+          </Link>
+        </div>
 
         <div className="mb-6">
           <SavedTextsList
