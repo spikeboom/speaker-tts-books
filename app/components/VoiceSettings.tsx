@@ -48,8 +48,8 @@ export function VoiceSettings({
         </div>
       )}
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-3">
-        <div className="col-span-2 md:col-span-1">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2 md:gap-3">
+        <div className="col-span-1">
           <label className="block text-xs md:text-sm font-medium mb-1 transition-colors" style={{ color: 'var(--label-text)' }}>
             Voz
           </label>
@@ -125,6 +125,7 @@ export function VoiceSettings({
           </div>
         </div>
       </div>
+      <div className="h-8 md:h-4"></div>
     </div>
   );
 }

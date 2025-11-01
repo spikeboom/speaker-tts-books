@@ -163,8 +163,8 @@ export function EpubReader({ epubId, filePath, title, onClose }: EpubReaderProps
 
   return (
     <div className="fixed inset-0 z-50 transition-colors" style={{ backgroundColor: 'rgba(0, 0, 0, 0.95)' }}>
-      <div className="min-h-screen flex items-center justify-center p-2 md:p-4 py-4 md:py-8">
-        <div className="rounded-lg shadow-2xl w-full max-w-5xl h-screen md:h-auto flex flex-col transition-colors" style={{ backgroundColor: 'var(--card-bg)' }}>
+      <div className="h-screen flex items-center justify-center p-2 md:p-4">
+        <div className="rounded-lg shadow-2xl w-full max-w-5xl h-full flex flex-col transition-colors" style={{ backgroundColor: 'var(--card-bg)' }}>
         {/* Fixed Top Section */}
         <div className="relative z-40">
           {/* Header */}
