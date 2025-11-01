@@ -8,12 +8,13 @@ import { SentenceHighlight } from './SentenceHighlight';
 import { useEffect } from 'react';
 
 interface EpubReaderProps {
+  epubId: string;
   filePath: string;
   title: string;
   onClose: () => void;
 }
 
-export function EpubReader({ filePath, title, onClose }: EpubReaderProps) {
+export function EpubReader({ epubId, filePath, title, onClose }: EpubReaderProps) {
   const {
     loading,
     error,
@@ -22,11 +23,13 @@ export function EpubReader({ filePath, title, onClose }: EpubReaderProps) {
     bookTitle,
     progressPercentage,
     currentPageContent,
+    savedProgress,
     loadEpub,
     nextPage,
     previousPage,
     goToPage,
     reset,
+    saveProgress,
     hasNextPage,
     hasPreviousPage,
   } = useEpubReader();
@@ -56,8 +59,8 @@ export function EpubReader({ filePath, title, onClose }: EpubReaderProps) {
 
   // Load EPUB on mount
   useEffect(() => {
-    loadEpub(filePath, title);
-  }, [filePath, title, loadEpub]);
+    loadEpub(filePath, title, epubId);
+  }, [filePath, title, epubId, loadEpub]);
 
   // Update text when page changes or when content is loaded
   useEffect(() => {
@@ -68,6 +71,17 @@ export function EpubReader({ filePath, title, onClose }: EpubReaderProps) {
       }
     }
   }, [currentPageContent, currentPage, totalPages, setText, handleStop]);
+
+  // Load saved sentence position when progress is loaded
+  useEffect(() => {
+    if (savedProgress && savedProgress.current_page === currentPage && sentences.length > 0) {
+      // Scroll to saved sentence
+      const sentenceIndex = Math.min(savedProgress.current_sentence, sentences.length - 1);
+      if (sentenceIndex >= 0) {
+        // Visual feedback that we're at saved position will be handled by the UI
+      }
+    }
+  }, [savedProgress, currentPage, sentences.length]);
 
   // Handle page navigation
   const handleNextPage = () => {
@@ -81,6 +95,15 @@ export function EpubReader({ filePath, title, onClose }: EpubReaderProps) {
     if (hasPreviousPage) {
       handleStop();
       previousPage();
+    }
+  };
+
+  const handleSaveProgress = async () => {
+    const success = await saveProgress(currentPage, currentSentenceIndex);
+    if (success) {
+      alert('✅ Progresso salvo com sucesso! Página ' + (currentPage + 1) + ', frase ' + (currentSentenceIndex + 1));
+    } else {
+      alert('❌ Erro ao salvar progresso.');
     }
   };
 
@@ -201,17 +224,40 @@ export function EpubReader({ filePath, title, onClose }: EpubReaderProps) {
             </button>
           </div>
 
-          {/* TTS Controls */}
+          {/* TTS Controls and Save Progress */}
           <div className="mb-6">
-            <PlaybackControls
-              isPlaying={isPlaying}
-              isPaused={isPaused}
-              onPlay={handlePlay}
-              onPause={handlePause}
-              onStop={handleStop}
-              onReset={handleReset}
-              showReset={true}
-            />
+            <div className="flex items-center gap-4">
+              <div className="flex-1">
+                <PlaybackControls
+                  isPlaying={isPlaying}
+                  isPaused={isPaused}
+                  onPlay={handlePlay}
+                  onPause={handlePause}
+                  onStop={handleStop}
+                  onReset={handleReset}
+                  showReset={true}
+                />
+              </div>
+              <button
+                onClick={handleSaveProgress}
+                className="px-6 py-3 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 font-semibold shadow-md transition-colors flex items-center gap-2 whitespace-nowrap"
+                title="Salvar onde você parou"
+              >
+                🔖 Salvar Progresso
+              </button>
+            </div>
+
+            {/* Saved Progress Indicator */}
+            {savedProgress && (
+              <div className="mt-3 p-3 bg-green-50 border-2 border-green-200 rounded-lg">
+                <p className="text-sm text-green-800">
+                  <strong>✅ Última leitura salva:</strong> Página {savedProgress.current_page + 1}, Frase {savedProgress.current_sentence + 1}
+                  {savedProgress.current_page === currentPage && (
+                    <span className="ml-2 text-green-600 font-semibold">(Esta página)</span>
+                  )}
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Page Content with Sentence Highlighting */}
@@ -232,6 +278,11 @@ export function EpubReader({ filePath, title, onClose }: EpubReaderProps) {
               currentSentenceIndex={currentSentenceIndex}
               isPlaying={isPlaying}
               isPaused={isPaused}
+              savedSentenceIndex={
+                savedProgress && savedProgress.current_page === currentPage
+                  ? savedProgress.current_sentence
+                  : undefined
+              }
             />
           </div>
 

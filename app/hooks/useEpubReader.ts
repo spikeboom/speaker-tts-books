@@ -10,6 +10,14 @@ export interface EpubPage {
 
 const CHARS_PER_PAGE = 2000; // Aproximadamente 2000 caracteres por página
 
+export interface ReadingProgress {
+  epub_id: string;
+  current_page: number;
+  current_sentence: number;
+  total_pages: number;
+  last_read_at: string;
+}
+
 export function useEpubReader() {
   const [book, setBook] = useState<Book | null>(null);
   const [loading, setLoading] = useState(false);
@@ -18,6 +26,8 @@ export function useEpubReader() {
   const [pages, setPages] = useState<string[]>([]);
   const [bookTitle, setBookTitle] = useState('');
   const [totalCharacters, setTotalCharacters] = useState(0);
+  const [epubId, setEpubId] = useState<string>('');
+  const [savedProgress, setSavedProgress] = useState<ReadingProgress | null>(null);
   const supabase = createClient();
 
   // Calculate progress percentage
@@ -25,12 +35,34 @@ export function useEpubReader() {
     ? Math.round(((currentPage + 1) / pages.length) * 100)
     : 0;
 
+  // Load saved progress from database
+  const loadProgress = useCallback(async (id: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('epub_reading_progress')
+        .select('*')
+        .eq('epub_id', id)
+        .single();
+
+      if (error) {
+        // No progress saved yet
+        return null;
+      }
+
+      return data as ReadingProgress;
+    } catch (err) {
+      console.warn('Error loading progress:', err);
+      return null;
+    }
+  }, [supabase]);
+
   // Load EPUB from Supabase storage
-  const loadEpub = useCallback(async (filePath: string, title: string) => {
+  const loadEpub = useCallback(async (filePath: string, title: string, id: string) => {
     try {
       setLoading(true);
       setError(null);
       setBookTitle(title);
+      setEpubId(id);
       setCurrentPage(0);
 
       // Download EPUB file from Supabase
@@ -99,6 +131,13 @@ export function useEpubReader() {
       // Split into pages
       const paginatedPages = paginateText(fullText, CHARS_PER_PAGE);
       setPages(paginatedPages);
+
+      // Load saved progress
+      const progress = await loadProgress(id);
+      if (progress && progress.current_page < paginatedPages.length) {
+        setCurrentPage(progress.current_page);
+        setSavedProgress(progress);
+      }
 
       return true;
     } catch (err) {
@@ -183,6 +222,37 @@ export function useEpubReader() {
     }
   }, [pages.length]);
 
+  // Save reading progress to database
+  const saveProgress = useCallback(async (page: number, sentence: number) => {
+    if (!epubId || pages.length === 0) return false;
+
+    try {
+      const progressData = {
+        epub_id: epubId,
+        current_page: page,
+        current_sentence: sentence,
+        total_pages: pages.length,
+        last_read_at: new Date().toISOString(),
+      };
+
+      const { data, error } = await supabase
+        .from('epub_reading_progress')
+        .upsert(progressData, {
+          onConflict: 'epub_id',
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setSavedProgress(data as ReadingProgress);
+      return true;
+    } catch (err) {
+      console.error('Error saving progress:', err);
+      return false;
+    }
+  }, [epubId, pages.length, supabase]);
+
   // Reset reader
   const reset = useCallback(() => {
     setBook(null);
@@ -190,6 +260,8 @@ export function useEpubReader() {
     setCurrentPage(0);
     setBookTitle('');
     setTotalCharacters(0);
+    setEpubId('');
+    setSavedProgress(null);
     setError(null);
   }, []);
 
@@ -207,12 +279,14 @@ export function useEpubReader() {
     progressPercentage,
     totalCharacters,
     currentPageContent: pages[currentPage] || '',
+    savedProgress,
     loadEpub,
     nextPage,
     previousPage,
     goToPage,
     reset,
     getCurrentPageContent,
+    saveProgress,
     hasNextPage: currentPage < pages.length - 1,
     hasPreviousPage: currentPage > 0,
   };

@@ -3,6 +3,7 @@ interface SentenceHighlightProps {
   currentSentenceIndex: number;
   isPlaying: boolean;
   isPaused: boolean;
+  savedSentenceIndex?: number;
 }
 
 export function SentenceHighlight({
@@ -10,6 +11,7 @@ export function SentenceHighlight({
   currentSentenceIndex,
   isPlaying,
   isPaused,
+  savedSentenceIndex,
 }: SentenceHighlightProps) {
   if (sentences.length === 0) {
     return (
@@ -26,6 +28,7 @@ export function SentenceHighlight({
       <div className="text-lg leading-relaxed text-gray-800" style={{ whiteSpace: 'pre-wrap' }}>
         {sentences.map((sentence, index) => {
           const isCurrentSentence = index === currentSentenceIndex && (isPlaying || isPaused);
+          const isSavedSentence = savedSentenceIndex !== undefined && index === savedSentenceIndex && !isPlaying && !isPaused;
 
           return (
             <span
@@ -40,7 +43,11 @@ export function SentenceHighlight({
                   ? 'bg-orange-200 font-semibold text-gray-900 px-1 rounded border-2 border-orange-400'
                   : ''
                 }
-                ${!isCurrentSentence
+                ${isSavedSentence
+                  ? 'bg-green-100 font-semibold text-gray-900 px-1 rounded border-2 border-green-400'
+                  : ''
+                }
+                ${!isCurrentSentence && !isSavedSentence
                   ? 'text-gray-700'
                   : ''
                 }

@@ -280,6 +280,7 @@ export default function Home() {
 
       {selectedEpub && (
         <EpubReader
+          epubId={selectedEpub.id}
           filePath={selectedEpub.file_path}
           title={selectedEpub.title}
           onClose={handleCloseEpubReader}

@@ -43,3 +43,28 @@ CREATE POLICY "Allow all operations on epubs"
 
 -- Create index for faster queries
 CREATE INDEX IF NOT EXISTS epubs_uploaded_at_idx ON epubs(uploaded_at DESC);
+
+-- Create table for EPUB reading progress
+CREATE TABLE IF NOT EXISTS epub_reading_progress (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  epub_id UUID NOT NULL REFERENCES epubs(id) ON DELETE CASCADE,
+  current_page INTEGER NOT NULL DEFAULT 0,
+  current_sentence INTEGER NOT NULL DEFAULT 0,
+  total_pages INTEGER NOT NULL,
+  last_read_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  UNIQUE(epub_id)
+);
+
+-- Enable Row Level Security
+ALTER TABLE epub_reading_progress ENABLE ROW LEVEL SECURITY;
+
+-- Create policy to allow all operations (for development)
+CREATE POLICY "Allow all operations on epub_reading_progress"
+  ON epub_reading_progress
+  FOR ALL
+  USING (true)
+  WITH CHECK (true);
+
+-- Create index for faster queries
+CREATE INDEX IF NOT EXISTS epub_reading_progress_epub_id_idx ON epub_reading_progress(epub_id);
+CREATE INDEX IF NOT EXISTS epub_reading_progress_last_read_at_idx ON epub_reading_progress(last_read_at DESC);
