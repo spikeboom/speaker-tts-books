@@ -1,12 +1,19 @@
 'use client';
 
+import { useState } from 'react';
 import { TextInput } from './components/TextInput';
 import { PlaybackControls } from './components/PlaybackControls';
 import { VoiceSettings } from './components/VoiceSettings';
 import { SentenceHighlight } from './components/SentenceHighlight';
+import { SaveTextModal } from './components/SaveTextModal';
+import { SavedTextsList } from './components/SavedTextsList';
 import { useSentenceReader } from './hooks/useSentenceReader';
+import { useTexts } from './hooks/useTexts';
 
 export default function Home() {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [currentTextId, setCurrentTextId] = useState<string | undefined>(undefined);
+
   const {
     text,
     setText,
@@ -29,6 +36,41 @@ export default function Home() {
     handleReset,
   } = useSentenceReader();
 
+  const {
+    texts,
+    loading: textsLoading,
+    error: textsError,
+    saveText,
+    deleteText,
+  } = useTexts();
+
+  const handleSaveText = async (title: string) => {
+    const success = await saveText(title, text);
+    if (success) {
+      alert('Texto salvo com sucesso!');
+    } else {
+      alert('Erro ao salvar texto. Verifique se a tabela foi criada no Supabase.');
+    }
+  };
+
+  const handleSelectText = (savedText: { id: string; title: string; content: string }) => {
+    setText(savedText.content);
+    setCurrentTextId(savedText.id);
+    handleStop(); // Stop any current playback
+  };
+
+  const handleDeleteText = async (id: string) => {
+    const success = await deleteText(id);
+    if (success) {
+      if (currentTextId === id) {
+        setCurrentTextId(undefined);
+      }
+      alert('Texto excluído com sucesso!');
+    } else {
+      alert('Erro ao excluir texto.');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-8">
       <div className="max-w-4xl mx-auto">
@@ -37,6 +79,19 @@ export default function Home() {
         </h1>
 
         <div className="bg-white rounded-lg shadow-xl p-6 mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold text-gray-800">
+              ✏️ Texto para Leitura
+            </h2>
+            <button
+              onClick={() => setIsModalOpen(true)}
+              disabled={!text.trim() || (isPlaying && !isPaused)}
+              className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:bg-gray-300 disabled:cursor-not-allowed font-semibold shadow-md transition-colors"
+            >
+              💾 Salvar Texto
+            </button>
+          </div>
+
           <TextInput value={text} onChange={setText} disabled={isPlaying && !isPaused} />
 
           <div className="mt-6">
@@ -50,6 +105,16 @@ export default function Home() {
               showReset={true}
             />
           </div>
+        </div>
+
+        <div className="mb-6">
+          <SavedTextsList
+            texts={texts}
+            loading={textsLoading}
+            onSelectText={handleSelectText}
+            onDeleteText={handleDeleteText}
+            currentTextId={currentTextId}
+          />
         </div>
 
         <div className="bg-white rounded-lg shadow-xl p-6 mb-6">
@@ -95,16 +160,36 @@ export default function Home() {
           <ul className="text-sm text-gray-700 space-y-1 list-disc list-inside">
             <li>Cole ou digite seu texto no campo acima</li>
             <li>Clique em <strong>Reproduzir</strong> para iniciar a leitura frase por frase</li>
-            <li>Use <strong>Pausar</strong> para salvar o progresso - ao retomar, continua da mesma frase</li>
-            <li>Se parar no meio de uma frase, ao dar play volta para o início dessa frase</li>
+            <li>Use <strong>Pausar</strong> para pausar - ao retomar, volta do início da frase atual</li>
+            <li>Use <strong>Parar</strong> para interromper completamente a leitura</li>
             <li>Use <strong>Resetar</strong> para voltar ao início do texto</li>
-            <li>A frase atual é destacada em amarelo durante a leitura</li>
+            <li>A frase atual é destacada em amarelo (tocando) ou laranja (pausado)</li>
+            <li>Clique em <strong>💾 Salvar Texto</strong> para guardar o texto no banco de dados</li>
+            <li>Na seção <strong>📚 Textos Salvos</strong>, clique em <strong>📖 Carregar</strong> para usar um texto salvo</li>
           </ul>
           <p className="mt-3 text-xs text-gray-600">
             💡 Este leitor usa a Web Speech API nativa do navegador (funciona melhor no Chrome, Edge e Safari)
           </p>
         </div>
+
+        {textsError && (
+          <div className="mt-4 bg-red-50 border-2 border-red-300 rounded-lg p-4">
+            <p className="text-red-700 text-sm">
+              ⚠️ <strong>Erro:</strong> {textsError}
+            </p>
+            <p className="text-red-600 text-xs mt-2">
+              Certifique-se de executar o SQL em <code>supabase/schema.sql</code> no seu projeto Supabase.
+            </p>
+          </div>
+        )}
       </div>
+
+      <SaveTextModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSave={handleSaveText}
+        currentText={text}
+      />
     </div>
   );
 }

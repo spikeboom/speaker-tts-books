@@ -178,10 +178,9 @@ export function useSentenceReader() {
     }
 
     if (isPaused) {
-      // Resume from pause
-      window.speechSynthesis.resume();
+      // When resuming from pause, always start from beginning of current sentence
       setIsPaused(false);
-      setIsPlaying(true);
+      speakSentence(currentSentenceIndex);
       return;
     }
 
@@ -190,13 +189,16 @@ export function useSentenceReader() {
   }, [text, sentences, isPaused, currentSentenceIndex, speakSentence]);
 
   const handlePause = useCallback(() => {
-    if (window.speechSynthesis.speaking && !window.speechSynthesis.paused) {
-      window.speechSynthesis.pause();
+    if (window.speechSynthesis.speaking || isPlaying) {
+      // Cancel completely instead of pausing for more reliable behavior
+      window.speechSynthesis.cancel();
       setIsPaused(true);
       setIsPlaying(false);
+      // Reset to beginning of current sentence
+      characterPositionRef.current = 0;
       saveProgress();
     }
-  }, [saveProgress]);
+  }, [saveProgress, isPlaying]);
 
   const handleStop = useCallback(() => {
     window.speechSynthesis.cancel();
