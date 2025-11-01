@@ -179,10 +179,8 @@ export function EpubReader({ epubId, filePath, title, onClose }: EpubReaderProps
                 </span>
               </div>
             </div>
-            <div className="flex items-center gap-2 flex-shrink-0">
-              <div className="hidden md:block">
-                <ThemeToggle />
-              </div>
+            <div className="flex items-center gap-1 md:gap-2 flex-shrink-0">
+              <ThemeToggle />
               <button
                 onClick={handleClose}
                 className="text-white hover:bg-white hover:bg-opacity-20 rounded-lg p-1 md:p-2 transition-colors flex-shrink-0"
@@ -207,11 +205,11 @@ export function EpubReader({ epubId, filePath, title, onClose }: EpubReaderProps
         {/* Content */}
         <div className="p-2 md:p-4 flex-1 overflow-y-auto">
           {/* Page Navigation */}
-          <div className="flex flex-wrap items-center justify-between gap-1.5 md:gap-2 mb-2 md:mb-3">
+          <div className="flex items-center justify-between gap-1.5 md:gap-2 mb-2 md:mb-3">
             <button
               onClick={handlePreviousPage}
               disabled={!hasPreviousPage || isPlaying}
-              className="px-2 md:px-4 py-1 md:py-2 rounded text-xs md:text-sm font-semibold transition-colors"
+              className="p-1.5 md:p-2 rounded transition-colors"
               style={{
                 backgroundColor: !hasPreviousPage || isPlaying ? 'var(--gray-300)' : 'var(--gray-600)',
                 color: 'var(--button-text)',
@@ -229,36 +227,17 @@ export function EpubReader({ epubId, filePath, title, onClose }: EpubReaderProps
               }}
               title="Página anterior"
             >
-              ← Ant.
+              ⏪
             </button>
 
-            <div className="text-center">
-              <input
-                type="number"
-                min="1"
-                max={totalPages}
-                value={currentPage + 1}
-                onChange={(e) => {
-                  const page = parseInt(e.target.value) - 1;
-                  if (!isNaN(page)) {
-                    goToPage(page);
-                  }
-                }}
-                disabled={isPlaying}
-                className="w-14 md:w-16 px-2 py-1 text-center text-xs md:text-sm border rounded transition-colors focus:outline-none"
-                style={{
-                  borderColor: 'var(--input-border)',
-                  backgroundColor: 'var(--input-bg)',
-                  color: 'var(--input-text)',
-                }}
-              />
-              <p className="text-xs mt-0.5 transition-colors" style={{ color: 'var(--text-secondary)' }}>pág</p>
-            </div>
+            <span className="text-xs md:text-sm font-semibold transition-colors" style={{ color: 'var(--text-secondary)' }}>
+              {currentPage + 1}/{totalPages}
+            </span>
 
             <button
               onClick={handleNextPage}
               disabled={!hasNextPage || isPlaying}
-              className="px-2 md:px-4 py-1 md:py-2 rounded text-xs md:text-sm font-semibold transition-colors"
+              className="p-1.5 md:p-2 rounded transition-colors"
               style={{
                 backgroundColor: !hasNextPage || isPlaying ? 'var(--gray-300)' : 'var(--gray-600)',
                 color: 'var(--button-text)',
@@ -276,7 +255,7 @@ export function EpubReader({ epubId, filePath, title, onClose }: EpubReaderProps
               }}
               title="Próxima página"
             >
-              Prox. →
+              ⏩
             </button>
 
             {/* TTS Controls */}
