@@ -78,6 +78,16 @@ export default function Home() {
           📖 Leitor de Texto com TTS
         </h1>
 
+        <div className="mb-6">
+          <SavedTextsList
+            texts={texts}
+            loading={textsLoading}
+            onSelectText={handleSelectText}
+            onDeleteText={handleDeleteText}
+            currentTextId={currentTextId}
+          />
+        </div>
+
         <div className="bg-white rounded-lg shadow-xl p-6 mb-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-semibold text-gray-800">
@@ -105,16 +115,6 @@ export default function Home() {
               showReset={true}
             />
           </div>
-        </div>
-
-        <div className="mb-6">
-          <SavedTextsList
-            texts={texts}
-            loading={textsLoading}
-            onSelectText={handleSelectText}
-            onDeleteText={handleDeleteText}
-            currentTextId={currentTextId}
-          />
         </div>
 
         <div className="bg-white rounded-lg shadow-xl p-6 mb-6">

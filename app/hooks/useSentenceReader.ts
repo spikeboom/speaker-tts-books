@@ -19,25 +19,35 @@ export function useSentenceReader() {
   const [volume, setVolume] = useState(1);
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
   const characterPositionRef = useRef(0);
+  const isPausingRef = useRef(false);
 
   // Split text into sentences
   const splitIntoSentences = (inputText: string): string[] => {
     if (!inputText.trim()) return [];
 
-    // Split by common sentence delimiters while keeping the delimiter
-    const rawSentences = inputText.split(/([.!?]+\s+|[.!?]+$)/g);
+    // Split by common sentence delimiters while keeping the delimiter and whitespace
+    const rawSentences = inputText.split(/([.!?]+(?:\s+|\n+))|([.!?]+$)/g);
     const processedSentences: string[] = [];
 
-    for (let i = 0; i < rawSentences.length; i += 2) {
-      const sentence = rawSentences[i];
-      const delimiter = rawSentences[i + 1] || '';
-      const combined = (sentence + delimiter).trim();
-      if (combined) {
-        processedSentences.push(combined);
+    for (let i = 0; i < rawSentences.length; i++) {
+      const part = rawSentences[i];
+      if (!part) continue;
+
+      // If it's a delimiter with whitespace, add it to the previous sentence
+      if (/^[.!?]+(?:\s+|\n+)$/.test(part) && processedSentences.length > 0) {
+        processedSentences[processedSentences.length - 1] += part;
+      }
+      // If it's a delimiter at the end, add it to the previous sentence
+      else if (/^[.!?]+$/.test(part) && processedSentences.length > 0) {
+        processedSentences[processedSentences.length - 1] += part;
+      }
+      // Otherwise, it's a new sentence
+      else if (part.trim()) {
+        processedSentences.push(part);
       }
     }
 
-    return processedSentences.filter(s => s.length > 0);
+    return processedSentences.filter(s => s.trim().length > 0);
   };
 
   // Load progress from localStorage
@@ -129,6 +139,7 @@ export function useSentenceReader() {
     utterance.volume = volume;
 
     utterance.onstart = () => {
+      if (isPausingRef.current) return;
       setIsPlaying(true);
       setIsPaused(false);
       setCurrentSentenceIndex(index);
@@ -136,10 +147,15 @@ export function useSentenceReader() {
     };
 
     utterance.onboundary = (event) => {
+      if (isPausingRef.current) return;
       characterPositionRef.current = event.charIndex;
     };
 
     utterance.onend = () => {
+      if (isPausingRef.current) {
+        isPausingRef.current = false;
+        return;
+      }
       // Move to next sentence
       const nextIndex = index + 1;
       if (nextIndex < sentences.length) {
@@ -157,6 +173,10 @@ export function useSentenceReader() {
     };
 
     utterance.onerror = (event) => {
+      if (isPausingRef.current) {
+        isPausingRef.current = false;
+        return;
+      }
       console.error('Speech synthesis error:', event);
       setIsPlaying(false);
       setIsPaused(false);
@@ -179,21 +199,29 @@ export function useSentenceReader() {
 
     if (isPaused) {
       // When resuming from pause, always start from beginning of current sentence
+      isPausingRef.current = false; // Clear the pausing flag
       setIsPaused(false);
       speakSentence(currentSentenceIndex);
       return;
     }
 
     // Start or restart from current sentence
+    isPausingRef.current = false; // Clear the pausing flag
     speakSentence(currentSentenceIndex);
   }, [text, sentences, isPaused, currentSentenceIndex, speakSentence]);
 
   const handlePause = useCallback(() => {
     if (window.speechSynthesis.speaking || isPlaying) {
+      // Set flag to prevent utterance events from changing state
+      isPausingRef.current = true;
+
       // Cancel completely instead of pausing for more reliable behavior
       window.speechSynthesis.cancel();
+
+      // Set states after cancel to ensure they persist
       setIsPaused(true);
       setIsPlaying(false);
+
       // Reset to beginning of current sentence
       characterPositionRef.current = 0;
       saveProgress();

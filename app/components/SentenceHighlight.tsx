@@ -23,7 +23,7 @@ export function SentenceHighlight({
 
   return (
     <div className="w-full min-h-[300px] p-6 border-2 border-gray-300 rounded-lg bg-white overflow-y-auto max-h-[500px]">
-      <div className="text-lg leading-relaxed text-gray-800 whitespace-pre-wrap">
+      <div className="text-lg leading-relaxed text-gray-800" style={{ whiteSpace: 'pre-wrap' }}>
         {sentences.map((sentence, index) => {
           const isCurrentSentence = index === currentSentenceIndex && (isPlaying || isPaused);
 
@@ -49,6 +49,7 @@ export function SentenceHighlight({
                   : ''
                 }
               `}
+              style={{ whiteSpace: 'pre-wrap' }}
             >
               {sentence}{' '}
             </span>
