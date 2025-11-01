@@ -142,6 +142,9 @@ export function useSentenceReader() {
     const voice = voices.find(v => v.name === selectedVoice);
     if (voice) {
       utterance.voice = voice;
+      // Required for Android Chrome to properly change voice
+      utterance.lang = voice.lang;
+      utterance.voiceURI = voice.voiceURI;
     }
 
     utterance.rate = rate;
