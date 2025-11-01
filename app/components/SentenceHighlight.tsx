@@ -26,16 +26,13 @@ export function SentenceHighlight({
 
       if (currentSentenceElement && container) {
         // Get positions relative to container
-        const containerRect = container.getBoundingClientRect();
-        const sentenceRect = currentSentenceElement.getBoundingClientRect();
-
-        // Calculate the offset needed to center the sentence in the container
         const sentenceOffsetTop = currentSentenceElement.offsetTop;
         const containerHeight = container.clientHeight;
-        const sentenceHeight = sentenceRect.height;
+        const sentenceHeight = currentSentenceElement.clientHeight;
 
-        // Center the sentence
-        const scrollPosition = sentenceOffsetTop - (containerHeight / 2) + (sentenceHeight / 2);
+        // Position the sentence in the lower third of the container for better mobile readability
+        // This keeps more text visible below the active sentence
+        const scrollPosition = sentenceOffsetTop - (containerHeight * 0.75) + (sentenceHeight / 2);
 
         container.scrollTo({
           top: scrollPosition,
@@ -43,7 +40,7 @@ export function SentenceHighlight({
         });
       }
     }
-  }, [currentSentenceIndex]);
+  }, [currentSentenceIndex, isPlaying]);
 
   if (sentences.length === 0) {
     return (

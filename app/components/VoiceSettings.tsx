@@ -23,74 +23,78 @@ export function VoiceSettings({
 }: VoiceSettingsProps) {
   return (
     <div className="w-full">
-      <h2 className="text-2xl font-semibold text-gray-800 mb-4">⚙️ Configurações</h2>
+      <h3 className="text-xs md:text-sm font-semibold text-gray-700 mb-2 md:mb-3">⚙️ Voz & Som</h3>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-3">
+        <div className="col-span-2 md:col-span-1">
+          <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1">
             Voz
           </label>
           <select
             value={selectedVoice}
             onChange={(e) => onVoiceChange(e.target.value)}
-            className="w-full p-2 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none text-gray-700"
+            className="w-full p-1 md:p-2 text-xs md:text-sm border border-gray-300 rounded focus:border-blue-500 focus:outline-none text-gray-700"
           >
             {voices.map((voice) => (
               <option key={voice.name} value={voice.name}>
-                {voice.name} ({voice.lang})
+                {voice.name.split(' ').slice(0, 2).join(' ')} ({voice.lang.slice(0, 2).toUpperCase()})
               </option>
             ))}
           </select>
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Velocidade: {rate.toFixed(1)}x
+        <div className="col-span-1">
+          <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1">
+            Vel.
           </label>
-          <input
-            type="range"
-            min="0.1"
-            max="2"
-            step="0.1"
-            value={rate}
-            onChange={(e) => onRateChange(parseFloat(e.target.value))}
-            className="w-full"
-          />
-          <div className="flex justify-between text-xs text-gray-500 mt-1">
-            <span>0.1x (muito lento)</span>
-            <span>1x (normal)</span>
-            <span>2x (rápido)</span>
+          <div className="flex items-center gap-1">
+            <input
+              type="range"
+              min="0.1"
+              max="2"
+              step="0.1"
+              value={rate}
+              onChange={(e) => onRateChange(parseFloat(e.target.value))}
+              className="flex-1"
+            />
+            <span className="text-xs text-gray-600 font-semibold min-w-max">{rate.toFixed(1)}x</span>
           </div>
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Tom: {pitch.toFixed(1)}
+        <div className="col-span-1">
+          <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1">
+            Tom
           </label>
-          <input
-            type="range"
-            min="0.5"
-            max="2"
-            step="0.1"
-            value={pitch}
-            onChange={(e) => onPitchChange(parseFloat(e.target.value))}
-            className="w-full"
-          />
+          <div className="flex items-center gap-1">
+            <input
+              type="range"
+              min="0.5"
+              max="2"
+              step="0.1"
+              value={pitch}
+              onChange={(e) => onPitchChange(parseFloat(e.target.value))}
+              className="flex-1"
+            />
+            <span className="text-xs text-gray-600 font-semibold min-w-max">{pitch.toFixed(1)}</span>
+          </div>
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Volume: {Math.round(volume * 100)}%
+        <div className="col-span-1">
+          <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1">
+            Vol.
           </label>
-          <input
-            type="range"
-            min="0"
-            max="1"
-            step="0.1"
-            value={volume}
-            onChange={(e) => onVolumeChange(parseFloat(e.target.value))}
-            className="w-full"
-          />
+          <div className="flex items-center gap-1">
+            <input
+              type="range"
+              min="0"
+              max="1"
+              step="0.1"
+              value={volume}
+              onChange={(e) => onVolumeChange(parseFloat(e.target.value))}
+              className="flex-1"
+            />
+            <span className="text-xs text-gray-600 font-semibold min-w-max">{Math.round(volume * 100)}%</span>
+          </div>
         </div>
       </div>
     </div>
