@@ -162,11 +162,13 @@ export function EpubReader({ epubId, filePath, title, onClose }: EpubReaderProps
   }
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto transition-colors" style={{ backgroundColor: 'rgba(0, 0, 0, 0.95)' }}>
+    <div className="fixed inset-0 z-50 transition-colors" style={{ backgroundColor: 'rgba(0, 0, 0, 0.95)' }}>
       <div className="min-h-screen flex items-center justify-center p-2 md:p-4 py-4 md:py-8">
         <div className="rounded-lg shadow-2xl w-full max-w-5xl h-screen md:h-auto flex flex-col transition-colors" style={{ backgroundColor: 'var(--card-bg)' }}>
-        {/* Header */}
-        <div className="text-white p-3 md:p-6 rounded-t-lg transition-colors" style={{ background: 'linear-gradient(to right, var(--purple-light), var(--blue-light))' }}>
+        {/* Fixed Top Section */}
+        <div className="relative z-40">
+          {/* Header */}
+          <div className="text-white p-3 md:p-6 rounded-t-lg transition-colors" style={{ background: 'linear-gradient(to right, var(--purple-light), var(--blue-light))' }}>
           <div className="flex items-center justify-between gap-2 mb-2 md:mb-4">
             <div className="flex-1 min-w-0">
               <h2 className="text-lg md:text-2xl font-bold mb-1 md:mb-2 truncate">📖 {bookTitle}</h2>
@@ -202,175 +204,178 @@ export function EpubReader({ epubId, filePath, title, onClose }: EpubReaderProps
           </div>
         </div>
 
-        {/* Content */}
-        <div className="p-2 md:p-4 flex-1 overflow-y-auto">
-          {/* Page Navigation */}
-          <div className="flex items-center justify-between gap-1.5 md:gap-2 mb-2 md:mb-3">
+        {/* Page Navigation */}
+        <div className="bg-opacity-95 backdrop-blur-sm flex items-center justify-between gap-1.5 md:gap-2 mb-2 md:mb-3 p-2 md:p-3 rounded transition-colors" style={{ backgroundColor: 'var(--card-bg)' }}>
+          <button
+            onClick={handlePreviousPage}
+            disabled={!hasPreviousPage || isPlaying}
+            className="p-1.5 md:p-2 rounded transition-colors"
+            style={{
+              backgroundColor: !hasPreviousPage || isPlaying ? 'var(--gray-300)' : 'var(--gray-600)',
+              color: 'var(--button-text)',
+              cursor: !hasPreviousPage || isPlaying ? 'not-allowed' : 'pointer',
+            }}
+            onMouseEnter={(e) => {
+              if (hasPreviousPage && !isPlaying) {
+                (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--gray-700)';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (hasPreviousPage && !isPlaying) {
+                (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--gray-600)';
+              }
+            }}
+            title="Página anterior"
+          >
+            ⏪
+          </button>
+
+          <span className="text-xs md:text-sm font-semibold transition-colors" style={{ color: 'var(--text-secondary)' }}>
+            {currentPage + 1}/{totalPages}
+          </span>
+
+          <button
+            onClick={handleNextPage}
+            disabled={!hasNextPage || isPlaying}
+            className="p-1.5 md:p-2 rounded transition-colors"
+            style={{
+              backgroundColor: !hasNextPage || isPlaying ? 'var(--gray-300)' : 'var(--gray-600)',
+              color: 'var(--button-text)',
+              cursor: !hasNextPage || isPlaying ? 'not-allowed' : 'pointer',
+            }}
+            onMouseEnter={(e) => {
+              if (hasNextPage && !isPlaying) {
+                (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--gray-700)';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (hasNextPage && !isPlaying) {
+                (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--gray-600)';
+              }
+            }}
+            title="Próxima página"
+          >
+            ⏩
+          </button>
+
+          {/* TTS Controls */}
+          <div className="flex items-center gap-1">
+            <PlaybackControls
+              isPlaying={isPlaying}
+              isPaused={isPaused}
+              onPlay={handlePlay}
+              onPause={handlePause}
+              onStop={handleStop}
+              onReset={handleReset}
+              showReset={true}
+            />
+          </div>
+
+          <button
+            onClick={handleSaveProgress}
+            className="px-2 md:px-3 py-1 md:py-2 rounded text-xs md:text-sm font-semibold transition-colors whitespace-nowrap"
+            style={{
+              backgroundColor: 'var(--yellow-light)',
+              color: 'var(--button-text)',
+            }}
+            onMouseEnter={(e) => {
+              (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--yellow-dark)';
+            }}
+            onMouseLeave={(e) => {
+              (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--yellow-light)';
+            }}
+            title="Salvar progresso"
+          >
+            🔖
+          </button>
+        </div>
+
+        {/* Sentence Navigation */}
+        <div className="mb-2 flex items-center justify-between flex-shrink-0 px-2 md:px-3 py-1 md:py-2">
+          <div className="flex items-center gap-1 md:gap-2">
             <button
-              onClick={handlePreviousPage}
-              disabled={!hasPreviousPage || isPlaying}
-              className="p-1.5 md:p-2 rounded transition-colors"
+              onClick={previousSentence}
+              disabled={currentSentenceIndex === 0}
+              className="px-1.5 md:px-2 py-0.5 md:py-1 rounded font-semibold text-xs transition-colors"
               style={{
-                backgroundColor: !hasPreviousPage || isPlaying ? 'var(--gray-300)' : 'var(--gray-600)',
+                backgroundColor: currentSentenceIndex === 0 ? 'var(--gray-300)' : 'var(--blue-light)',
                 color: 'var(--button-text)',
-                cursor: !hasPreviousPage || isPlaying ? 'not-allowed' : 'pointer',
+                cursor: currentSentenceIndex === 0 ? 'not-allowed' : 'pointer',
               }}
               onMouseEnter={(e) => {
-                if (hasPreviousPage && !isPlaying) {
-                  (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--gray-700)';
+                if (currentSentenceIndex !== 0) {
+                  (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--blue-dark)';
                 }
               }}
               onMouseLeave={(e) => {
-                if (hasPreviousPage && !isPlaying) {
-                  (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--gray-600)';
+                if (currentSentenceIndex !== 0) {
+                  (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--blue-light)';
                 }
               }}
-              title="Página anterior"
+              title="Frase anterior"
             >
               ⏪
             </button>
-
-            <span className="text-xs md:text-sm font-semibold transition-colors" style={{ color: 'var(--text-secondary)' }}>
-              {currentPage + 1}/{totalPages}
+            <span className="text-xs md:text-sm font-semibold whitespace-nowrap transition-colors" style={{ color: 'var(--text-secondary)' }}>
+              {currentSentenceIndex + 1}/{sentences.length}
             </span>
-
             <button
-              onClick={handleNextPage}
-              disabled={!hasNextPage || isPlaying}
-              className="p-1.5 md:p-2 rounded transition-colors"
+              onClick={nextSentence}
+              disabled={currentSentenceIndex === sentences.length - 1}
+              className="px-1.5 md:px-2 py-0.5 md:py-1 rounded font-semibold text-xs transition-colors"
               style={{
-                backgroundColor: !hasNextPage || isPlaying ? 'var(--gray-300)' : 'var(--gray-600)',
+                backgroundColor: currentSentenceIndex === sentences.length - 1 ? 'var(--gray-300)' : 'var(--blue-light)',
                 color: 'var(--button-text)',
-                cursor: !hasNextPage || isPlaying ? 'not-allowed' : 'pointer',
+                cursor: currentSentenceIndex === sentences.length - 1 ? 'not-allowed' : 'pointer',
               }}
               onMouseEnter={(e) => {
-                if (hasNextPage && !isPlaying) {
-                  (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--gray-700)';
+                if (currentSentenceIndex !== sentences.length - 1) {
+                  (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--blue-dark)';
                 }
               }}
               onMouseLeave={(e) => {
-                if (hasNextPage && !isPlaying) {
-                  (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--gray-600)';
+                if (currentSentenceIndex !== sentences.length - 1) {
+                  (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--blue-light)';
                 }
               }}
-              title="Próxima página"
+              title="Próxima frase"
             >
               ⏩
             </button>
-
-            {/* TTS Controls */}
-            <div className="flex items-center gap-1">
-              <PlaybackControls
-                isPlaying={isPlaying}
-                isPaused={isPaused}
-                onPlay={handlePlay}
-                onPause={handlePause}
-                onStop={handleStop}
-                onReset={handleReset}
-                showReset={true}
-              />
-            </div>
-
-            <button
-              onClick={handleSaveProgress}
-              className="px-2 md:px-3 py-1 md:py-2 rounded text-xs md:text-sm font-semibold transition-colors whitespace-nowrap"
-              style={{
-                backgroundColor: 'var(--yellow-light)',
-                color: 'var(--button-text)',
-              }}
-              onMouseEnter={(e) => {
-                (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--yellow-dark)';
-              }}
-              onMouseLeave={(e) => {
-                (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--yellow-light)';
-              }}
-              title="Salvar progresso"
-            >
-              🔖
-            </button>
           </div>
+          {isPaused && (
+            <span className="font-semibold text-xs md:text-sm transition-colors" style={{ color: 'var(--yellow-dark)' }}>
+              ⏸️ Pausado
+            </span>
+          )}
+        </div>
 
-          {/* Saved Progress Indicator - Compact */}
-          {savedProgress && (
-            <div
-              className="text-xs md:text-sm px-2 md:px-3 py-1 md:py-1.5 rounded border mb-2 md:mb-3 transition-colors"
-              style={{
-                backgroundColor: 'var(--green-bg)',
-                borderColor: 'var(--green-light)',
-                color: 'var(--green-dark)',
-              }}
-            >
-              <span className="block md:inline">
-                ✅ Salvo: <span className="md:hidden">P.{savedProgress.current_page + 1} F.{savedProgress.current_sentence + 1}</span>
-                <span className="hidden md:inline">Página {savedProgress.current_page + 1}, Frase {savedProgress.current_sentence + 1}</span>
-              </span>
+        {/* Saved Progress Indicator - Compact */}
+        {savedProgress && (
+          <div
+            className="text-xs md:text-sm px-2 md:px-3 py-1 md:py-1.5 rounded border mb-2 md:mb-3 transition-colors"
+            style={{
+              backgroundColor: 'var(--green-bg)',
+              borderColor: 'var(--green-light)',
+              color: 'var(--green-dark)',
+            }}
+          >
+            <span className="block md:inline">
+              ✅ Salvo: <span className="md:hidden">P.{savedProgress.current_page + 1} F.{savedProgress.current_sentence + 1}</span>
+              <span className="hidden md:inline">Página {savedProgress.current_page + 1}, Frase {savedProgress.current_sentence + 1}</span>
+
               {savedProgress.current_page === currentPage && (
                 <span className="ml-1 font-semibold">(agora)</span>
               )}
-            </div>
-          )}
+            </span>
+          </div>
+        )}
+        </div>
 
+        {/* Content */}
+        <div className="p-2 md:p-4 flex-1 overflow-y-auto">
           {/* Page Content with Sentence Highlighting */}
           <div className="rounded-lg p-2 md:p-4 mb-2 md:mb-3 min-h-[250px] md:min-h-[400px] flex flex-col transition-colors" style={{ backgroundColor: 'var(--hover-bg)' }}>
-            <div className="mb-2 flex items-center justify-between flex-shrink-0">
-              <div className="flex items-center gap-1 md:gap-2">
-                <button
-                  onClick={previousSentence}
-                  disabled={currentSentenceIndex === 0}
-                  className="px-1.5 md:px-2 py-0.5 md:py-1 rounded font-semibold text-xs transition-colors"
-                  style={{
-                    backgroundColor: currentSentenceIndex === 0 ? 'var(--gray-300)' : 'var(--blue-light)',
-                    color: 'var(--button-text)',
-                    cursor: currentSentenceIndex === 0 ? 'not-allowed' : 'pointer',
-                  }}
-                  onMouseEnter={(e) => {
-                    if (currentSentenceIndex !== 0) {
-                      (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--blue-dark)';
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (currentSentenceIndex !== 0) {
-                      (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--blue-light)';
-                    }
-                  }}
-                  title="Frase anterior"
-                >
-                  ⏪
-                </button>
-                <span className="text-xs md:text-sm font-semibold whitespace-nowrap transition-colors" style={{ color: 'var(--text-secondary)' }}>
-                  {currentSentenceIndex + 1}/{sentences.length}
-                </span>
-                <button
-                  onClick={nextSentence}
-                  disabled={currentSentenceIndex === sentences.length - 1}
-                  className="px-1.5 md:px-2 py-0.5 md:py-1 rounded font-semibold text-xs transition-colors"
-                  style={{
-                    backgroundColor: currentSentenceIndex === sentences.length - 1 ? 'var(--gray-300)' : 'var(--blue-light)',
-                    color: 'var(--button-text)',
-                    cursor: currentSentenceIndex === sentences.length - 1 ? 'not-allowed' : 'pointer',
-                  }}
-                  onMouseEnter={(e) => {
-                    if (currentSentenceIndex !== sentences.length - 1) {
-                      (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--blue-dark)';
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (currentSentenceIndex !== sentences.length - 1) {
-                      (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--blue-light)';
-                    }
-                  }}
-                  title="Próxima frase"
-                >
-                  ⏩
-                </button>
-              </div>
-              {isPaused && (
-                <span className="font-semibold text-xs md:text-sm transition-colors" style={{ color: 'var(--yellow-dark)' }}>
-                  ⏸️ Pausado
-                </span>
-              )}
-            </div>
-
             <div className="flex-1 overflow-hidden">
               <SentenceHighlight
                 sentences={sentences}
