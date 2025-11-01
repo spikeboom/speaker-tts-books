@@ -8,12 +8,17 @@ import { VoiceSettings } from './components/VoiceSettings';
 import { SentenceHighlight } from './components/SentenceHighlight';
 import { SaveTextModal } from './components/SaveTextModal';
 import { SavedTextsList } from './components/SavedTextsList';
+import { EpubsList } from './components/EpubsList';
+import { EpubReader } from './components/EpubReader';
 import { useSentenceReader } from './hooks/useSentenceReader';
 import { useTexts } from './hooks/useTexts';
+import { useEpubs, Epub } from './hooks/useEpubs';
 
 export default function Home() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentTextId, setCurrentTextId] = useState<string | undefined>(undefined);
+  const [activeTab, setActiveTab] = useState<'texts' | 'epubs'>('texts');
+  const [selectedEpub, setSelectedEpub] = useState<Epub | null>(null);
 
   const {
     text,
@@ -45,6 +50,14 @@ export default function Home() {
     deleteText,
   } = useTexts();
 
+  const {
+    epubs,
+    loading: epubsLoading,
+    error: epubsError,
+    downloadEpub,
+    deleteEpub,
+  } = useEpubs();
+
   const handleSaveText = async (title: string) => {
     const success = await saveText(title, text);
     if (success) {
@@ -72,6 +85,23 @@ export default function Home() {
     }
   };
 
+  const handleDeleteEpub = async (id: string, filePath: string) => {
+    const success = await deleteEpub(id, filePath);
+    if (success) {
+      alert('EPUB excluído com sucesso!');
+    } else {
+      alert('Erro ao excluir EPUB.');
+    }
+  };
+
+  const handleReadEpub = async (epub: Epub) => {
+    setSelectedEpub(epub);
+  };
+
+  const handleCloseEpubReader = () => {
+    setSelectedEpub(null);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-8">
       <div className="max-w-4xl mx-auto">
@@ -88,13 +118,72 @@ export default function Home() {
         </div>
 
         <div className="mb-6">
-          <SavedTextsList
-            texts={texts}
-            loading={textsLoading}
-            onSelectText={handleSelectText}
-            onDeleteText={handleDeleteText}
-            currentTextId={currentTextId}
-          />
+          {/* Tabs */}
+          <div className="bg-white rounded-t-lg shadow-xl p-2 flex gap-2">
+            <button
+              onClick={() => setActiveTab('texts')}
+              className={`flex-1 px-4 py-3 rounded-lg font-semibold transition-colors ${
+                activeTab === 'texts'
+                  ? 'bg-blue-500 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              📝 Textos Salvos ({texts.length})
+            </button>
+            <button
+              onClick={() => setActiveTab('epubs')}
+              className={`flex-1 px-4 py-3 rounded-lg font-semibold transition-colors ${
+                activeTab === 'epubs'
+                  ? 'bg-purple-500 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              📚 EPUBs ({epubs.length})
+            </button>
+          </div>
+
+          {/* Tab Content */}
+          <div className="bg-white rounded-b-lg shadow-xl">
+            {activeTab === 'texts' ? (
+              <div className="p-6">
+                <SavedTextsList
+                  texts={texts}
+                  loading={textsLoading}
+                  onSelectText={handleSelectText}
+                  onDeleteText={handleDeleteText}
+                  currentTextId={currentTextId}
+                  hideTitle={true}
+                />
+              </div>
+            ) : (
+              <div className="p-6">
+                <EpubsList
+                  epubs={epubs}
+                  loading={epubsLoading}
+                  onDownload={downloadEpub}
+                  onDelete={handleDeleteEpub}
+                  onRead={handleReadEpub}
+                  hideTitle={true}
+                />
+              </div>
+            )}
+          </div>
+
+          {/* Error Messages */}
+          {activeTab === 'texts' && textsError && (
+            <div className="mt-4 bg-red-50 border-2 border-red-300 rounded-lg p-4">
+              <p className="text-red-700 text-sm">
+                ⚠️ <strong>Erro:</strong> {textsError}
+              </p>
+            </div>
+          )}
+          {activeTab === 'epubs' && epubsError && (
+            <div className="mt-4 bg-red-50 border-2 border-red-300 rounded-lg p-4">
+              <p className="text-red-700 text-sm">
+                ⚠️ <strong>Erro:</strong> {epubsError}
+              </p>
+            </div>
+          )}
         </div>
 
         <div className="bg-white rounded-lg shadow-xl p-6 mb-6">
@@ -180,17 +269,6 @@ export default function Home() {
             💡 Este leitor usa a Web Speech API nativa do navegador (funciona melhor no Chrome, Edge e Safari)
           </p>
         </div>
-
-        {textsError && (
-          <div className="mt-4 bg-red-50 border-2 border-red-300 rounded-lg p-4">
-            <p className="text-red-700 text-sm">
-              ⚠️ <strong>Erro:</strong> {textsError}
-            </p>
-            <p className="text-red-600 text-xs mt-2">
-              Certifique-se de executar o SQL em <code>supabase/schema.sql</code> no seu projeto Supabase.
-            </p>
-          </div>
-        )}
       </div>
 
       <SaveTextModal
@@ -199,6 +277,14 @@ export default function Home() {
         onSave={handleSaveText}
         currentText={text}
       />
+
+      {selectedEpub && (
+        <EpubReader
+          filePath={selectedEpub.file_path}
+          title={selectedEpub.title}
+          onClose={handleCloseEpubReader}
+        />
+      )}
     </div>
   );
 }

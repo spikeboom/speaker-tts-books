@@ -6,6 +6,7 @@ interface SavedTextsListProps {
   onSelectText: (text: SavedText) => void;
   onDeleteText: (id: string) => void;
   currentTextId?: string;
+  hideTitle?: boolean;
 }
 
 export function SavedTextsList({
@@ -14,6 +15,7 @@ export function SavedTextsList({
   onSelectText,
   onDeleteText,
   currentTextId,
+  hideTitle = false,
 }: SavedTextsListProps) {
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -28,10 +30,12 @@ export function SavedTextsList({
 
   if (loading && texts.length === 0) {
     return (
-      <div className="bg-white rounded-lg shadow-xl p-6">
-        <h2 className="text-2xl font-semibold text-gray-800 mb-4">
-          📚 Textos Salvos
-        </h2>
+      <div>
+        {!hideTitle && (
+          <h2 className="text-2xl font-semibold text-gray-800 mb-4">
+            📚 Textos Salvos
+          </h2>
+        )}
         <div className="flex items-center justify-center py-8">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
           <span className="ml-3 text-gray-600">Carregando...</span>
@@ -42,10 +46,12 @@ export function SavedTextsList({
 
   if (texts.length === 0) {
     return (
-      <div className="bg-white rounded-lg shadow-xl p-6">
-        <h2 className="text-2xl font-semibold text-gray-800 mb-4">
-          📚 Textos Salvos
-        </h2>
+      <div>
+        {!hideTitle && (
+          <h2 className="text-2xl font-semibold text-gray-800 mb-4">
+            📚 Textos Salvos
+          </h2>
+        )}
         <div className="text-center py-8 text-gray-500">
           <p className="text-lg mb-2">Nenhum texto salvo ainda</p>
           <p className="text-sm">
@@ -57,15 +63,17 @@ export function SavedTextsList({
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-xl p-6">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-2xl font-semibold text-gray-800">
-          📚 Textos Salvos
-        </h2>
-        <span className="text-sm text-gray-600 bg-blue-100 px-3 py-1 rounded-full">
-          {texts.length} {texts.length === 1 ? 'texto' : 'textos'}
-        </span>
-      </div>
+    <div>
+      {!hideTitle && (
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-2xl font-semibold text-gray-800">
+            📚 Textos Salvos
+          </h2>
+          <span className="text-sm text-gray-600 bg-blue-100 px-3 py-1 rounded-full">
+            {texts.length} {texts.length === 1 ? 'texto' : 'textos'}
+          </span>
+        </div>
+      )}
 
       <div className="space-y-3 max-h-[400px] overflow-y-auto">
         {texts.map((text) => {
