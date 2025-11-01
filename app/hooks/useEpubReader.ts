@@ -87,6 +87,7 @@ export function useEpubReader() {
 
       // Process each section
       const spineItems = Array.isArray(spine) ? spine : (spine as any)?.items || [];
+
       if (spineItems && spineItems.length > 0) {
         for (const item of spineItems) {
           try {
@@ -98,20 +99,28 @@ export function useEpubReader() {
               let text = '';
 
               if (doc) {
-                // Try different approaches to get content
+                // EPUB retorna Document Fragment - procurar body nos childNodes
+                let bodyElement = null;
+
                 if (doc.body) {
-                  text = doc.body.textContent || doc.body.innerText || '';
-                } else if (doc.documentElement) {
-                  text = doc.documentElement.textContent || doc.documentElement.innerText || '';
-                } else if (typeof doc === 'object' && (doc as any).innerHTML) {
-                  text = (doc as any).textContent || (doc as any).innerText || '';
+                  bodyElement = doc.body;
+                } else if (doc.childNodes) {
+                  // Procurar elemento 'body' nos childNodes
+                  for (let i = 0; i < doc.childNodes.length; i++) {
+                    const node = doc.childNodes[i];
+                    if (node.nodeName && node.nodeName.toLowerCase() === 'body') {
+                      bodyElement = node as HTMLElement;
+                      break;
+                    }
+                  }
+                }
+
+                if (bodyElement) {
+                  // Usar formatador customizado para preservar quebras de linha
+                  text = htmlToFormattedText(bodyElement);
                 } else {
-                  // Last resort: serialize and parse
-                  const serializer = new XMLSerializer();
-                  const xmlString = serializer.serializeToString(doc);
-                  const parser = new DOMParser();
-                  const parsedDoc = parser.parseFromString(xmlString, 'text/html');
-                  text = parsedDoc.body?.textContent || parsedDoc.documentElement?.textContent || '';
+                  // Fallback: usar textContent direto
+                  text = doc.textContent || '';
                 }
               }
 
@@ -133,6 +142,8 @@ export function useEpubReader() {
       const paginatedPages = paginateText(fullText, CHARS_PER_PAGE);
       setPages(paginatedPages);
 
+      console.log(`✅ EPUB processado: ${paginatedPages.length} páginas com quebras de linha preservadas`);
+
       // Load saved progress
       const progress = await loadProgress(id);
       if (progress && progress.current_page < paginatedPages.length) {
@@ -150,33 +161,32 @@ export function useEpubReader() {
     }
   }, [supabase]);
 
-  // Helper function to extract text from DOM nodes
-  const extractTextFromNode = (node: Node): string => {
-    let text = '';
+  // Helper function to convert HTML to formatted text (preserving line breaks)
+  const htmlToFormattedText = (htmlElement: HTMLElement): string => {
+    // Clone the element to avoid modifying the original
+    const clone = htmlElement.cloneNode(true) as HTMLElement;
 
-    if (node.nodeType === Node.TEXT_NODE) {
-      return node.textContent || '';
-    }
+    // Remove script and style tags
+    clone.querySelectorAll('script, style').forEach(el => el.remove());
 
-    if (node.nodeType === Node.ELEMENT_NODE) {
-      const element = node as Element;
+    // Add line breaks before block elements
+    const blockElements = clone.querySelectorAll('p, div, h1, h2, h3, h4, h5, h6, li, blockquote, pre');
+    blockElements.forEach(el => {
+      // Add newline before the element
+      const textNode = document.createTextNode('\n');
+      el.parentNode?.insertBefore(textNode, el);
+    });
 
-      // Skip script and style tags
-      if (element.tagName === 'SCRIPT' || element.tagName === 'STYLE') {
-        return '';
-      }
+    // Replace <br> with newlines
+    clone.querySelectorAll('br').forEach(br => {
+      br.replaceWith(document.createTextNode('\n'));
+    });
 
-      // Add line breaks for block elements
-      const blockElements = ['P', 'DIV', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'LI', 'BR'];
+    // Get text content and clean up multiple consecutive newlines
+    let text = clone.textContent || '';
 
-      for (const child of Array.from(node.childNodes)) {
-        text += extractTextFromNode(child);
-      }
-
-      if (blockElements.includes(element.tagName)) {
-        text += '\n';
-      }
-    }
+    // Replace multiple consecutive newlines with double newline (paragraph spacing)
+    text = text.replace(/\n{3,}/g, '\n\n');
 
     return text;
   };
