@@ -25,18 +25,24 @@ export function VoiceSettings({
 
   return (
     <div className="w-full">
-      <h3 className="text-xs md:text-sm font-semibold text-gray-700 mb-2 md:mb-3">⚙️ Voz & Som</h3>
+      <h3 className="text-xs md:text-sm font-semibold mb-2 md:mb-3 transition-colors" style={{ color: 'var(--label-text)' }}>⚙️ Voz & Som</h3>
 
       {isAndroid && (
-        <div className="mb-3 bg-amber-50 border border-amber-300 rounded-lg p-3">
-          <p className="text-xs text-amber-800 font-semibold mb-1">
+        <div
+          className="mb-3 border rounded-lg p-3 transition-colors"
+          style={{
+            backgroundColor: 'var(--yellow-bg)',
+            borderColor: 'var(--yellow-light)',
+          }}
+        >
+          <p className="text-xs font-semibold mb-1 transition-colors" style={{ color: 'var(--yellow-dark)' }}>
             📱 Android - Importante:
           </p>
-          <p className="text-xs text-amber-700">
+          <p className="text-xs transition-colors" style={{ color: 'var(--yellow-dark)' }}>
             Se a voz não mudar, desmarque <strong>"Sempre usar minhas configurações"</strong> em:<br />
             <span className="text-xs italic">Configurações → Idioma e entrada → Opções de texto para fala → Configurações do Google Text-to-speech</span>
           </p>
-          <p className="text-xs text-amber-700 mt-1">
+          <p className="text-xs mt-1 transition-colors" style={{ color: 'var(--yellow-dark)' }}>
             Abra o Console do navegador (DevTools) para ver logs de debug das vozes disponíveis.
           </p>
         </div>
@@ -44,13 +50,18 @@ export function VoiceSettings({
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-3">
         <div className="col-span-2 md:col-span-1">
-          <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-xs md:text-sm font-medium mb-1 transition-colors" style={{ color: 'var(--label-text)' }}>
             Voz
           </label>
           <select
             value={selectedVoice}
             onChange={(e) => onVoiceChange(e.target.value)}
-            className="w-full p-1 md:p-2 text-xs md:text-sm border border-gray-300 rounded focus:border-blue-500 focus:outline-none text-gray-700"
+            className="w-full p-1 md:p-2 text-xs md:text-sm border rounded transition-colors focus:outline-none"
+            style={{
+              backgroundColor: 'var(--input-bg)',
+              borderColor: 'var(--input-border)',
+              color: 'var(--input-text)',
+            }}
           >
             {voices.map((voice) => (
               <option key={voice.name} value={voice.name}>
@@ -61,7 +72,7 @@ export function VoiceSettings({
         </div>
 
         <div className="col-span-1">
-          <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-xs md:text-sm font-medium mb-1 transition-colors" style={{ color: 'var(--label-text)' }}>
             Vel.
           </label>
           <div className="flex items-center gap-1">
@@ -74,12 +85,12 @@ export function VoiceSettings({
               onChange={(e) => onRateChange(parseFloat(e.target.value))}
               className="flex-1"
             />
-            <span className="text-xs text-gray-600 font-semibold min-w-max">{rate.toFixed(1)}x</span>
+            <span className="text-xs font-semibold min-w-max transition-colors" style={{ color: 'var(--text-secondary)' }}>{rate.toFixed(1)}x</span>
           </div>
         </div>
 
         <div className="col-span-1">
-          <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-xs md:text-sm font-medium mb-1 transition-colors" style={{ color: 'var(--label-text)' }}>
             Tom
           </label>
           <div className="flex items-center gap-1">
@@ -92,12 +103,12 @@ export function VoiceSettings({
               onChange={(e) => onPitchChange(parseFloat(e.target.value))}
               className="flex-1"
             />
-            <span className="text-xs text-gray-600 font-semibold min-w-max">{pitch.toFixed(1)}</span>
+            <span className="text-xs font-semibold min-w-max transition-colors" style={{ color: 'var(--text-secondary)' }}>{pitch.toFixed(1)}</span>
           </div>
         </div>
 
         <div className="col-span-1">
-          <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-xs md:text-sm font-medium mb-1 transition-colors" style={{ color: 'var(--label-text)' }}>
             Vol.
           </label>
           <div className="flex items-center gap-1">
@@ -110,7 +121,7 @@ export function VoiceSettings({
               onChange={(e) => onVolumeChange(parseFloat(e.target.value))}
               className="flex-1"
             />
-            <span className="text-xs text-gray-600 font-semibold min-w-max">{Math.round(volume * 100)}%</span>
+            <span className="text-xs font-semibold min-w-max transition-colors" style={{ color: 'var(--text-secondary)' }}>{Math.round(volume * 100)}%</span>
           </div>
         </div>
       </div>

@@ -22,7 +22,22 @@ export function PlaybackControls({
       <button
         onClick={onPlay}
         disabled={isPlaying && !isPaused}
-        className="px-2.5 py-1 bg-green-500 text-white rounded text-xs hover:bg-green-600 disabled:bg-gray-300 disabled:cursor-not-allowed font-semibold transition-colors"
+        className="px-2.5 py-1 rounded text-xs font-semibold transition-colors"
+        style={{
+          backgroundColor: isPlaying && !isPaused ? 'var(--gray-300)' : 'var(--green-light)',
+          color: 'var(--button-text)',
+          cursor: isPlaying && !isPaused ? 'not-allowed' : 'pointer',
+        }}
+        onMouseEnter={(e) => {
+          if (!(isPlaying && !isPaused)) {
+            (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--green-dark)';
+          }
+        }}
+        onMouseLeave={(e) => {
+          if (!(isPlaying && !isPaused)) {
+            (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--green-light)';
+          }
+        }}
         title={isPaused ? 'Continuar leitura' : 'Iniciar leitura'}
       >
         {isPaused ? '▶️' : '▶️'}
@@ -31,7 +46,22 @@ export function PlaybackControls({
       <button
         onClick={onPause}
         disabled={!isPlaying || isPaused}
-        className="px-2.5 py-1 bg-yellow-500 text-white rounded text-xs hover:bg-yellow-600 disabled:bg-gray-300 disabled:cursor-not-allowed font-semibold transition-colors"
+        className="px-2.5 py-1 rounded text-xs font-semibold transition-colors"
+        style={{
+          backgroundColor: !isPlaying || isPaused ? 'var(--gray-300)' : 'var(--yellow-light)',
+          color: 'var(--button-text)',
+          cursor: !isPlaying || isPaused ? 'not-allowed' : 'pointer',
+        }}
+        onMouseEnter={(e) => {
+          if (isPlaying && !isPaused) {
+            (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--yellow-dark)';
+          }
+        }}
+        onMouseLeave={(e) => {
+          if (isPlaying && !isPaused) {
+            (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--yellow-light)';
+          }
+        }}
         title="Pausar leitura"
       >
         ⏸️
@@ -40,7 +70,22 @@ export function PlaybackControls({
       <button
         onClick={onStop}
         disabled={!isPlaying && !isPaused}
-        className="px-2.5 py-1 bg-red-500 text-white rounded text-xs hover:bg-red-600 disabled:bg-gray-300 disabled:cursor-not-allowed font-semibold transition-colors"
+        className="px-2.5 py-1 rounded text-xs font-semibold transition-colors"
+        style={{
+          backgroundColor: !isPlaying && !isPaused ? 'var(--gray-300)' : 'var(--red-light)',
+          color: 'var(--button-text)',
+          cursor: !isPlaying && !isPaused ? 'not-allowed' : 'pointer',
+        }}
+        onMouseEnter={(e) => {
+          if (isPlaying || isPaused) {
+            (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--red-dark)';
+          }
+        }}
+        onMouseLeave={(e) => {
+          if (isPlaying || isPaused) {
+            (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--red-light)';
+          }
+        }}
         title="Parar leitura"
       >
         ⏹️
@@ -49,7 +94,17 @@ export function PlaybackControls({
       {showReset && onReset && (
         <button
           onClick={onReset}
-          className="px-2.5 py-1 bg-purple-500 text-white rounded text-xs hover:bg-purple-600 font-semibold transition-colors"
+          className="px-2.5 py-1 rounded text-xs font-semibold transition-colors"
+          style={{
+            backgroundColor: 'var(--purple-light)',
+            color: 'var(--button-text)',
+          }}
+          onMouseEnter={(e) => {
+            (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--purple-dark)';
+          }}
+          onMouseLeave={(e) => {
+            (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--purple-light)';
+          }}
           title="Reiniciar do começo"
         >
           🔄

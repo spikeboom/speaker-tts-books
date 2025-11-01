@@ -33,13 +33,13 @@ export function EpubsList({ epubs, loading, onDownload, onDelete, onRead, hideTi
     return (
       <div>
         {!hideTitle && (
-          <h2 className="text-2xl font-semibold text-gray-800 mb-4">
+          <h2 className="text-2xl font-semibold mb-4 transition-colors" style={{ color: 'var(--foreground)' }}>
             📚 Biblioteca de EPUBs
           </h2>
         )}
         <div className="flex items-center justify-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-          <span className="ml-3 text-gray-600">Carregando...</span>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2" style={{ borderColor: 'var(--blue-light)' }}></div>
+          <span className="ml-3 transition-colors" style={{ color: 'var(--text-secondary)' }}>Carregando...</span>
         </div>
       </div>
     );
@@ -49,11 +49,11 @@ export function EpubsList({ epubs, loading, onDownload, onDelete, onRead, hideTi
     return (
       <div>
         {!hideTitle && (
-          <h2 className="text-2xl font-semibold text-gray-800 mb-4">
+          <h2 className="text-2xl font-semibold mb-4 transition-colors" style={{ color: 'var(--foreground)' }}>
             📚 Biblioteca de EPUBs
           </h2>
         )}
-        <div className="text-center py-12 text-gray-500">
+        <div className="text-center py-12 transition-colors" style={{ color: 'var(--text-muted)' }}>
           <div className="text-6xl mb-4">📖</div>
           <p className="text-lg mb-2">Nenhum livro ainda</p>
           <p className="text-sm">
@@ -68,10 +68,16 @@ export function EpubsList({ epubs, loading, onDownload, onDelete, onRead, hideTi
     <div>
       {!hideTitle && (
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-2xl font-semibold text-gray-800">
+          <h2 className="text-2xl font-semibold transition-colors" style={{ color: 'var(--foreground)' }}>
             📚 Biblioteca de EPUBs
           </h2>
-          <span className="text-sm text-gray-600 bg-blue-100 px-3 py-1 rounded-full">
+          <span
+            className="text-sm px-3 py-1 rounded-full transition-colors"
+            style={{
+              color: 'var(--button-text)',
+              backgroundColor: 'var(--blue-light)',
+            }}
+          >
             {epubs.length} {epubs.length === 1 ? 'livro' : 'livros'}
           </span>
         </div>
@@ -81,7 +87,11 @@ export function EpubsList({ epubs, loading, onDownload, onDelete, onRead, hideTi
         {epubs.map((epub) => (
           <div
             key={epub.id}
-            className="border-2 border-gray-200 rounded-lg p-4 hover:border-blue-300 transition-all bg-gradient-to-br from-white to-gray-50"
+            className="border-2 rounded-lg p-4 transition-all"
+            style={{
+              borderColor: 'var(--border-color)',
+              background: `linear-gradient(to bottom right, var(--card-bg), var(--hover-bg))`,
+            }}
           >
             {/* Book Icon */}
             <div className="flex items-start justify-between mb-3">
@@ -92,7 +102,14 @@ export function EpubsList({ epubs, loading, onDownload, onDelete, onRead, hideTi
                     onDelete(epub.id, epub.file_path);
                   }
                 }}
-                className="text-red-500 hover:text-red-700 text-sm"
+                className="text-sm transition-colors"
+                style={{ color: 'var(--red-light)' }}
+                onMouseEnter={(e) => {
+                  (e.currentTarget as HTMLElement).style.color = 'var(--red-dark)';
+                }}
+                onMouseLeave={(e) => {
+                  (e.currentTarget as HTMLElement).style.color = 'var(--red-light)';
+                }}
                 title="Excluir"
               >
                 🗑️
@@ -100,12 +117,12 @@ export function EpubsList({ epubs, loading, onDownload, onDelete, onRead, hideTi
             </div>
 
             {/* Title */}
-            <h3 className="font-bold text-gray-800 text-lg mb-2 line-clamp-2 min-h-[3.5rem]">
+            <h3 className="font-bold text-lg mb-2 line-clamp-2 min-h-[3.5rem] transition-colors" style={{ color: 'var(--foreground)' }}>
               {epub.title}
             </h3>
 
             {/* File Info */}
-            <div className="text-xs text-gray-600 mb-3 space-y-1">
+            <div className="text-xs mb-3 space-y-1 transition-colors" style={{ color: 'var(--text-secondary)' }}>
               <p className="truncate" title={epub.file_name}>
                 📄 {epub.file_name}
               </p>
@@ -118,14 +135,34 @@ export function EpubsList({ epubs, loading, onDownload, onDelete, onRead, hideTi
               {onRead && (
                 <button
                   onClick={() => onRead(epub)}
-                  className="w-full px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 font-semibold text-sm shadow-sm transition-colors"
+                  className="w-full px-4 py-2 rounded-lg font-semibold text-sm shadow-sm transition-colors"
+                  style={{
+                    backgroundColor: 'var(--green-light)',
+                    color: 'var(--button-text)',
+                  }}
+                  onMouseEnter={(e) => {
+                    (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--green-dark)';
+                  }}
+                  onMouseLeave={(e) => {
+                    (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--green-light)';
+                  }}
                 >
                   📖 Ler com TTS
                 </button>
               )}
               <button
                 onClick={() => onDownload(epub)}
-                className="w-full px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 font-semibold text-sm shadow-sm transition-colors"
+                className="w-full px-4 py-2 rounded-lg font-semibold text-sm shadow-sm transition-colors"
+                style={{
+                  backgroundColor: 'var(--blue-light)',
+                  color: 'var(--button-text)',
+                }}
+                onMouseEnter={(e) => {
+                  (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--blue-dark)';
+                }}
+                onMouseLeave={(e) => {
+                  (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--blue-light)';
+                }}
               >
                 📥 Download
               </button>

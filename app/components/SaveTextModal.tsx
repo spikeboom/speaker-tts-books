@@ -43,14 +43,17 @@ export function SaveTextModal({ isOpen, onClose, onSave, currentText }: SaveText
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md mx-4">
-        <h2 className="text-2xl font-bold text-gray-800 mb-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center transition-colors" style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}>
+      <div
+        className="rounded-lg shadow-xl p-6 w-full max-w-md mx-4 transition-colors"
+        style={{ backgroundColor: 'var(--card-bg)' }}
+      >
+        <h2 className="text-2xl font-bold mb-4 transition-colors" style={{ color: 'var(--foreground)' }}>
           💾 Salvar Texto
         </h2>
 
         <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-medium mb-2 transition-colors" style={{ color: 'var(--label-text)' }}>
             Título do Texto
           </label>
           <input
@@ -58,7 +61,12 @@ export function SaveTextModal({ isOpen, onClose, onSave, currentText }: SaveText
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="Digite um título..."
-            className="w-full p-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none text-gray-700"
+            className="w-full p-3 border-2 rounded-lg focus:outline-none transition-colors"
+            style={{
+              borderColor: 'var(--input-border)',
+              backgroundColor: 'var(--input-bg)',
+              color: 'var(--input-text)',
+            }}
             autoFocus
             disabled={isSaving}
             onKeyDown={(e) => {
@@ -70,11 +78,17 @@ export function SaveTextModal({ isOpen, onClose, onSave, currentText }: SaveText
         </div>
 
         <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-medium mb-2 transition-colors" style={{ color: 'var(--label-text)' }}>
             Preview do Texto
           </label>
-          <div className="p-3 border-2 border-gray-200 rounded-lg bg-gray-50 max-h-32 overflow-y-auto">
-            <p className="text-sm text-gray-600 line-clamp-4">
+          <div
+            className="p-3 border-2 rounded-lg max-h-32 overflow-y-auto transition-colors"
+            style={{
+              borderColor: 'var(--border-color)',
+              backgroundColor: 'var(--hover-bg)',
+            }}
+          >
+            <p className="text-sm line-clamp-4 transition-colors" style={{ color: 'var(--text-secondary)' }}>
               {currentText.substring(0, 200)}
               {currentText.length > 200 ? '...' : ''}
             </p>
@@ -85,14 +99,44 @@ export function SaveTextModal({ isOpen, onClose, onSave, currentText }: SaveText
           <button
             onClick={handleSave}
             disabled={isSaving || !title.trim()}
-            className="flex-1 px-4 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:bg-gray-300 disabled:cursor-not-allowed font-semibold shadow-md transition-colors"
+            className="flex-1 px-4 py-3 rounded-lg font-semibold shadow-md transition-colors"
+            style={{
+              backgroundColor: isSaving || !title.trim() ? 'var(--gray-300)' : 'var(--green-light)',
+              color: 'var(--button-text)',
+              cursor: isSaving || !title.trim() ? 'not-allowed' : 'pointer',
+            }}
+            onMouseEnter={(e) => {
+              if (!isSaving && title.trim()) {
+                (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--green-dark)';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!isSaving && title.trim()) {
+                (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--green-light)';
+              }
+            }}
           >
             {isSaving ? '⏳ Salvando...' : '💾 Salvar'}
           </button>
           <button
             onClick={handleClose}
             disabled={isSaving}
-            className="flex-1 px-4 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600 disabled:bg-gray-300 disabled:cursor-not-allowed font-semibold shadow-md transition-colors"
+            className="flex-1 px-4 py-3 rounded-lg font-semibold shadow-md transition-colors"
+            style={{
+              backgroundColor: isSaving ? 'var(--gray-300)' : 'var(--gray-600)',
+              color: 'var(--button-text)',
+              cursor: isSaving ? 'not-allowed' : 'pointer',
+            }}
+            onMouseEnter={(e) => {
+              if (!isSaving) {
+                (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--gray-700)';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!isSaving) {
+                (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--gray-600)';
+              }
+            }}
           >
             ❌ Cancelar
           </button>

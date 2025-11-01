@@ -44,7 +44,14 @@ export function SentenceHighlight({
 
   if (sentences.length === 0) {
     return (
-      <div className="w-full min-h-[300px] p-6 border-2 border-gray-300 rounded-lg bg-gray-50 text-gray-400 flex items-center justify-center">
+      <div
+        className="w-full min-h-[300px] p-6 border-2 rounded-lg flex items-center justify-center transition-colors"
+        style={{
+          borderColor: 'var(--border-color)',
+          backgroundColor: 'var(--gray-100)',
+          color: 'var(--text-muted)',
+        }}
+      >
         <p className="text-center">
           Digite ou cole um texto acima para começar a leitura
         </p>
@@ -55,12 +62,40 @@ export function SentenceHighlight({
   return (
     <div
       ref={containerRef}
-      className="w-full min-h-[300px] p-6 border-2 border-gray-300 rounded-lg bg-white overflow-y-auto max-h-[500px]"
+      className="w-full min-h-[300px] p-6 border-2 rounded-lg overflow-y-auto max-h-[500px] transition-colors"
+      style={{
+        borderColor: 'var(--border-color)',
+        backgroundColor: 'var(--card-bg)',
+      }}
     >
-      <div className="text-lg leading-relaxed text-gray-800" style={{ whiteSpace: 'pre-wrap' }}>
+      <div className="text-lg leading-relaxed" style={{ whiteSpace: 'pre-wrap', color: 'var(--input-text)' }}>
         {sentences.map((sentence, index) => {
           const isCurrentSentence = index === currentSentenceIndex;
           const isSavedSentence = savedSentenceIndex !== undefined && index === savedSentenceIndex && !isPlaying && !isPaused && index !== currentSentenceIndex;
+
+          let bgColor = 'transparent';
+          let textColor = isCurrentSentence || isSavedSentence ? 'var(--foreground)' : 'var(--input-text)';
+          let shadowColor = '';
+
+          if (isCurrentSentence && isPlaying) {
+            bgColor = 'var(--highlight-yellow)';
+            textColor = 'var(--foreground)';
+            shadowColor = 'var(--yellow-light)';
+          } else if (isCurrentSentence && isPaused) {
+            bgColor = 'var(--highlight-orange)';
+            textColor = 'var(--foreground)';
+            shadowColor = 'var(--highlight-orange)';
+          } else if (isCurrentSentence && !isPlaying && !isPaused) {
+            bgColor = 'var(--blue-bg)';
+            textColor = 'var(--foreground)';
+            shadowColor = 'var(--blue-light)';
+          } else if (isSavedSentence) {
+            bgColor = 'var(--green-bg)';
+            textColor = 'var(--foreground)';
+            shadowColor = 'var(--green-light)';
+          } else if (index < currentSentenceIndex && (isPlaying || isPaused)) {
+            textColor = 'var(--text-muted)';
+          }
 
           return (
             <span
@@ -68,44 +103,13 @@ export function SentenceHighlight({
               ref={(el) => {
                 sentenceRefs.current[index] = el;
               }}
-              className={`
-                transition-all duration-300
-                ${isCurrentSentence && isPlaying
-                  ? 'bg-yellow-200 font-semibold text-gray-900 rounded'
-                  : ''
-                }
-                ${isCurrentSentence && isPaused
-                  ? 'bg-orange-200 font-semibold text-gray-900 rounded'
-                  : ''
-                }
-                ${isCurrentSentence && !isPlaying && !isPaused
-                  ? 'bg-blue-100 font-semibold text-gray-900 rounded'
-                  : ''
-                }
-                ${isSavedSentence
-                  ? 'bg-green-100 font-semibold text-gray-900 rounded'
-                  : ''
-                }
-                ${!isCurrentSentence && !isSavedSentence
-                  ? 'text-gray-700'
-                  : ''
-                }
-                ${index < currentSentenceIndex && (isPlaying || isPaused)
-                  ? 'text-gray-400'
-                  : ''
-                }
-              `}
+              className="transition-all duration-300 rounded"
               style={{
                 whiteSpace: 'pre-wrap',
-                ...(isCurrentSentence && isPaused ? {
-                  boxShadow: '0 0 0 2px #fb923c'
-                } : {}),
-                ...(isCurrentSentence && !isPlaying && !isPaused ? {
-                  boxShadow: '0 0 0 2px #60a5fa'
-                } : {}),
-                ...(isSavedSentence ? {
-                  boxShadow: '0 0 0 2px #4ade80'
-                } : {})
+                backgroundColor: bgColor,
+                color: textColor,
+                fontWeight: isCurrentSentence || isSavedSentence ? 'bold' : 'normal',
+                boxShadow: shadowColor ? `0 0 0 2px ${shadowColor}` : 'none',
               }}
             >
               {sentence}{' '}

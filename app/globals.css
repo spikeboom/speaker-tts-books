@@ -1,8 +1,113 @@
 @import "tailwindcss";
 
+/* Light mode colors */
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --card-bg: #ffffff;
+  --card-border: #e5e7eb;
+  --input-bg: #ffffff;
+  --input-border: #d1d5db;
+  --input-text: #171717;
+  --label-text: #374151;
+  --button-text: #ffffff;
+  --hover-bg: #f3f4f6;
+  --border-color: #e5e7eb;
+  --text-secondary: #6b7280;
+  --text-muted: #9ca3af;
+
+  /* Specific colors for components */
+  --blue-light: #3b82f6;
+  --blue-dark: #1e40af;
+  --blue-bg: #dbeafe;
+  --blue-hover: #93c5fd;
+
+  --green-light: #10b981;
+  --green-dark: #047857;
+  --green-bg: #d1fae5;
+
+  --red-light: #ef4444;
+  --red-dark: #991b1b;
+  --red-bg: #fee2e2;
+
+  --yellow-light: #eab308;
+  --yellow-dark: #713f12;
+  --yellow-bg: #fef3c7;
+
+  --purple-light: #a855f7;
+  --purple-dark: #581c87;
+  --purple-bg: #f3e8ff;
+
+  --gray-50: #f9fafb;
+  --gray-100: #f3f4f6;
+  --gray-200: #e5e7eb;
+  --gray-300: #d1d5db;
+  --gray-400: #9ca3af;
+  --gray-500: #6b7280;
+  --gray-600: #4b5563;
+  --gray-700: #374151;
+  --gray-800: #1f2937;
+  --gray-900: #111827;
+
+  --highlight-yellow: #fbbf24;
+  --highlight-blue: #60a5fa;
+  --highlight-green: #34d399;
+  --highlight-orange: #fb923c;
+}
+
+/* Dark mode colors */
+:root.dark {
+  --background: #0f172a;
+  --foreground: #e2e8f0;
+  --card-bg: #1e293b;
+  --card-border: #334155;
+  --input-bg: #0f172a;
+  --input-border: #475569;
+  --input-text: #e2e8f0;
+  --label-text: #cbd5e1;
+  --button-text: #ffffff;
+  --hover-bg: #1e293b;
+  --border-color: #334155;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+
+  /* Specific colors for components */
+  --blue-light: #60a5fa;
+  --blue-dark: #3b82f6;
+  --blue-bg: #1e3a8a;
+  --blue-hover: #1e40af;
+
+  --green-light: #34d399;
+  --green-dark: #059669;
+  --green-bg: #064e3b;
+
+  --red-light: #f87171;
+  --red-dark: #dc2626;
+  --red-bg: #7f1d1d;
+
+  --yellow-light: #fbbf24;
+  --yellow-dark: #d97706;
+  --yellow-bg: #713f12;
+
+  --purple-light: #d8b4fe;
+  --purple-dark: #a855f7;
+  --purple-bg: #3f0f63;
+
+  --gray-50: #f8fafc;
+  --gray-100: #f1f5f9;
+  --gray-200: #e2e8f0;
+  --gray-300: #cbd5e1;
+  --gray-400: #94a3b8;
+  --gray-500: #64748b;
+  --gray-600: #475569;
+  --gray-700: #334155;
+  --gray-800: #1e293b;
+  --gray-900: #0f172a;
+
+  --highlight-yellow: #d97706;
+  --highlight-blue: #3b82f6;
+  --highlight-green: #10b981;
+  --highlight-orange: #f97316;
 }
 
 @theme inline {
@@ -12,15 +117,9 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
