@@ -133,74 +133,88 @@ export function useSentenceReader() {
       return;
     }
 
-    // Only cancel if something is actually speaking
-    if (window.speechSynthesis.speaking) {
-      window.speechSynthesis.cancel();
-    }
+    // Detect Android
+    const isAndroid = /Android/i.test(navigator.userAgent);
 
-    const utterance = new SpeechSynthesisUtterance(sentences[index]);
-    const voice = voices.find(v => v.name === selectedVoice);
-    if (voice) {
-      utterance.voice = voice;
-      // Required for Android Chrome to properly change voice
-      utterance.lang = voice.lang;
-      // voiceURI is not in TypeScript's type definitions but is needed for Android Chrome
-      (utterance as any).voiceURI = voice.voiceURI;
-    }
+    // Always cancel before speaking to clear any cache
+    window.speechSynthesis.cancel();
 
-    utterance.rate = rate;
-    utterance.pitch = pitch;
-    utterance.volume = volume;
+    // Add small delay on Android to ensure cancel completes
+    const delay = isAndroid ? 100 : 0;
 
-    utterance.onstart = () => {
-      if (isPausingRef.current) return;
-      setIsPlaying(true);
-      setIsPaused(false);
-      setCurrentSentenceIndex(index);
-      characterPositionRef.current = 0;
-    };
+    setTimeout(() => {
+      const utterance = new SpeechSynthesisUtterance(sentences[index]);
+      const voice = voices.find(v => v.name === selectedVoice);
 
-    utterance.onboundary = (event) => {
-      if (isPausingRef.current) return;
-      characterPositionRef.current = event.charIndex;
-    };
+      if (voice) {
+        // On Android, setting voice property is ignored - only lang works
+        if (!isAndroid) {
+          utterance.voice = voice;
+        }
 
-    utterance.onend = () => {
-      if (isPausingRef.current) {
-        isPausingRef.current = false;
-        return;
+        // Required for all platforms, especially Android
+        utterance.lang = voice.lang;
+
+        // voiceURI is not in TypeScript's type definitions but is needed for Android Chrome
+        if (isAndroid) {
+          (utterance as any).voiceURI = voice.voiceURI;
+        }
       }
-      // Move to next sentence
-      const nextIndex = index + 1;
-      if (nextIndex < sentences.length) {
-        setCurrentSentenceIndex(nextIndex);
+
+      utterance.rate = rate;
+      utterance.pitch = pitch;
+      utterance.volume = volume;
+
+      utterance.onstart = () => {
+        if (isPausingRef.current) return;
+        setIsPlaying(true);
+        setIsPaused(false);
+        setCurrentSentenceIndex(index);
         characterPositionRef.current = 0;
-        saveProgress();
-        // Add small delay to let browser finish processing previous utterance
-        setTimeout(() => {
-          speakSentence(nextIndex);
-        }, 100);
-      } else {
+      };
+
+      utterance.onboundary = (event) => {
+        if (isPausingRef.current) return;
+        characterPositionRef.current = event.charIndex;
+      };
+
+      utterance.onend = () => {
+        if (isPausingRef.current) {
+          isPausingRef.current = false;
+          return;
+        }
+        // Move to next sentence
+        const nextIndex = index + 1;
+        if (nextIndex < sentences.length) {
+          setCurrentSentenceIndex(nextIndex);
+          characterPositionRef.current = 0;
+          saveProgress();
+          // Add small delay to let browser finish processing previous utterance
+          setTimeout(() => {
+            speakSentence(nextIndex);
+          }, 100);
+        } else {
+          setIsPlaying(false);
+          setIsPaused(false);
+          setCurrentSentenceIndex(0);
+          characterPositionRef.current = 0;
+          saveProgress();
+        }
+      };
+
+      utterance.onerror = (event) => {
+        if (isPausingRef.current) {
+          isPausingRef.current = false;
+          return;
+        }
+        console.error('Speech synthesis error:', event);
         setIsPlaying(false);
         setIsPaused(false);
-        setCurrentSentenceIndex(0);
-        characterPositionRef.current = 0;
-        saveProgress();
-      }
-    };
+      };
 
-    utterance.onerror = (event) => {
-      if (isPausingRef.current) {
-        isPausingRef.current = false;
-        return;
-      }
-      console.error('Speech synthesis error:', event);
-      setIsPlaying(false);
-      setIsPaused(false);
-    };
-
-    utteranceRef.current = utterance;
-    window.speechSynthesis.speak(utterance);
+      utteranceRef.current = utterance;
+      window.speechSynthesis.speak(utterance);
+    }, delay);
   }, [sentences, voices, selectedVoice, rate, pitch, volume, saveProgress]);
 
   const handlePlay = useCallback(() => {
