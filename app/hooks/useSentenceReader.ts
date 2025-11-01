@@ -84,15 +84,32 @@ export function useSentenceReader() {
   useEffect(() => {
     const loadVoices = () => {
       const availableVoices = window.speechSynthesis.getVoices();
+
+      // Debug: log all available voices on Android
+      const isAndroid = /Android/i.test(navigator.userAgent);
+      if (isAndroid) {
+        console.log('🔊 Android - Available voices:', availableVoices.map(v => ({
+          name: v.name,
+          lang: v.lang,
+          voiceURI: v.voiceURI,
+          default: v.default
+        })));
+      }
+
       setVoices(availableVoices);
 
-      // Prioritize en-US voices
-      const enUSVoice = availableVoices.find(voice => voice.lang.startsWith('en-US'));
+      // Android uses underscore (en_US) instead of dash (en-US)
+      // Prioritize en-US or en_US voices
+      const enUSVoice = availableVoices.find(voice =>
+        voice.lang.startsWith('en-US') || voice.lang.startsWith('en_US')
+      );
       if (enUSVoice) {
         setSelectedVoice(enUSVoice.name);
       } else {
         // Fallback to any English voice
-        const enVoice = availableVoices.find(voice => voice.lang.startsWith('en'));
+        const enVoice = availableVoices.find(voice =>
+          voice.lang.startsWith('en-') || voice.lang.startsWith('en_')
+        );
         if (enVoice) {
           setSelectedVoice(enVoice.name);
         } else if (availableVoices.length > 0) {
@@ -147,17 +164,26 @@ export function useSentenceReader() {
       const voice = voices.find(v => v.name === selectedVoice);
 
       if (voice) {
-        // On Android, setting voice property is ignored - only lang works
-        if (!isAndroid) {
-          utterance.voice = voice;
-        }
+        // Android uses underscore (en_US) but BCP 47 standard uses dash (en-US)
+        // Normalize to dash format
+        const normalizedLang = voice.lang.replace(/_/g, '-');
 
-        // Required for all platforms, especially Android
-        utterance.lang = voice.lang;
-
-        // voiceURI is not in TypeScript's type definitions but is needed for Android Chrome
         if (isAndroid) {
+          // On Android, DO NOT set voice property - it's ignored and may cause conflicts
+          // Only set lang and voiceURI
+          utterance.lang = normalizedLang;
           (utterance as any).voiceURI = voice.voiceURI;
+
+          console.log('🔊 Android - Speaking with:', {
+            selectedVoice: voice.name,
+            originalLang: voice.lang,
+            normalizedLang: normalizedLang,
+            voiceURI: voice.voiceURI
+          });
+        } else {
+          // On iOS and desktop, set all properties
+          utterance.voice = voice;
+          utterance.lang = normalizedLang;
         }
       }
 

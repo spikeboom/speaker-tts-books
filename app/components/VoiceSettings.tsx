@@ -21,9 +21,26 @@ export function VoiceSettings({
   volume,
   onVolumeChange,
 }: VoiceSettingsProps) {
+  const isAndroid = typeof navigator !== 'undefined' && /Android/i.test(navigator.userAgent);
+
   return (
     <div className="w-full">
       <h3 className="text-xs md:text-sm font-semibold text-gray-700 mb-2 md:mb-3">⚙️ Voz & Som</h3>
+
+      {isAndroid && (
+        <div className="mb-3 bg-amber-50 border border-amber-300 rounded-lg p-3">
+          <p className="text-xs text-amber-800 font-semibold mb-1">
+            📱 Android - Importante:
+          </p>
+          <p className="text-xs text-amber-700">
+            Se a voz não mudar, desmarque <strong>"Sempre usar minhas configurações"</strong> em:<br />
+            <span className="text-xs italic">Configurações → Idioma e entrada → Opções de texto para fala → Configurações do Google Text-to-speech</span>
+          </p>
+          <p className="text-xs text-amber-700 mt-1">
+            Abra o Console do navegador (DevTools) para ver logs de debug das vozes disponíveis.
+          </p>
+        </div>
+      )}
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-3">
         <div className="col-span-2 md:col-span-1">
