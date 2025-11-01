@@ -36,19 +36,19 @@ export function SentenceHighlight({
               className={`
                 transition-all duration-300
                 ${isCurrentSentence && isPlaying
-                  ? 'bg-yellow-200 font-semibold text-gray-900 px-1 rounded'
+                  ? 'bg-yellow-200 font-semibold text-gray-900 rounded'
                   : ''
                 }
                 ${isCurrentSentence && isPaused
-                  ? 'bg-orange-200 font-semibold text-gray-900 px-1 rounded border-2 border-orange-400'
+                  ? 'bg-orange-200 font-semibold text-gray-900 rounded'
                   : ''
                 }
                 ${isCurrentSentence && !isPlaying && !isPaused
-                  ? 'bg-blue-100 font-semibold text-gray-900 px-1 rounded border-2 border-blue-400'
+                  ? 'bg-blue-100 font-semibold text-gray-900 rounded'
                   : ''
                 }
                 ${isSavedSentence
-                  ? 'bg-green-100 font-semibold text-gray-900 px-1 rounded border-2 border-green-400'
+                  ? 'bg-green-100 font-semibold text-gray-900 rounded'
                   : ''
                 }
                 ${!isCurrentSentence && !isSavedSentence
@@ -60,7 +60,18 @@ export function SentenceHighlight({
                   : ''
                 }
               `}
-              style={{ whiteSpace: 'pre-wrap' }}
+              style={{
+                whiteSpace: 'pre-wrap',
+                ...(isCurrentSentence && isPaused ? {
+                  boxShadow: '0 0 0 2px #fb923c'
+                } : {}),
+                ...(isCurrentSentence && !isPlaying && !isPaused ? {
+                  boxShadow: '0 0 0 2px #60a5fa'
+                } : {}),
+                ...(isSavedSentence ? {
+                  boxShadow: '0 0 0 2px #4ade80'
+                } : {})
+              }}
             >
               {sentence}{' '}
             </span>

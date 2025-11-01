@@ -2,10 +2,12 @@
 
 import { EpubUpload } from '../components/EpubUpload';
 import { EpubsList } from '../components/EpubsList';
-import { useEpubs } from '../hooks/useEpubs';
+import { useEpubs, Epub } from '../hooks/useEpubs';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 export default function EpubsPage() {
+  const router = useRouter();
   const {
     epubs,
     loading,
@@ -33,6 +35,10 @@ export default function EpubsPage() {
     } else {
       alert('Erro ao excluir EPUB.');
     }
+  };
+
+  const handleRead = (epub: Epub) => {
+    router.push(`/epub/${epub.id}`);
   };
 
   return (
@@ -88,6 +94,7 @@ export default function EpubsPage() {
             loading={loading}
             onDownload={downloadEpub}
             onDelete={handleDelete}
+            onRead={handleRead}
           />
         </div>
 

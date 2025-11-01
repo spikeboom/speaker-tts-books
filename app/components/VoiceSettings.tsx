@@ -49,13 +49,18 @@ export function VoiceSettings({
           </label>
           <input
             type="range"
-            min="0.5"
+            min="0.1"
             max="2"
             step="0.1"
             value={rate}
             onChange={(e) => onRateChange(parseFloat(e.target.value))}
             className="w-full"
           />
+          <div className="flex justify-between text-xs text-gray-500 mt-1">
+            <span>0.1x (muito lento)</span>
+            <span>1x (normal)</span>
+            <span>2x (rápido)</span>
+          </div>
         </div>
 
         <div>
