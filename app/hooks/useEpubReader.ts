@@ -86,8 +86,9 @@ export function useEpubReader() {
       const allTexts: string[] = [];
 
       // Process each section
-      if (spine && Array.isArray(spine) && spine.length > 0) {
-        for (const item of spine) {
+      const spineItems = Array.isArray(spine) ? spine : (spine as any)?.items || [];
+      if (spineItems && spineItems.length > 0) {
+        for (const item of spineItems) {
           try {
             const section = epubBook.spine.get(item.href);
             if (section) {
