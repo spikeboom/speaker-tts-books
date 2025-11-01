@@ -86,12 +86,12 @@ export function useEpubReader() {
       const allTexts: string[] = [];
 
       // Process each section
-      if (spine.items && spine.items.length > 0) {
-        for (const item of spine.items) {
+      if (spine && Array.isArray(spine) && spine.length > 0) {
+        for (const item of spine) {
           try {
             const section = epubBook.spine.get(item.href);
             if (section) {
-              const doc = await section.load(epubBook.load.bind(epubBook));
+              const doc = await section.load(epubBook.load.bind(epubBook)) as any;
 
               // Extract text from the document
               let text = '';
@@ -102,8 +102,8 @@ export function useEpubReader() {
                   text = doc.body.textContent || doc.body.innerText || '';
                 } else if (doc.documentElement) {
                   text = doc.documentElement.textContent || doc.documentElement.innerText || '';
-                } else if (typeof doc === 'object' && doc.innerHTML) {
-                  text = doc.textContent || doc.innerText || '';
+                } else if (typeof doc === 'object' && (doc as any).innerHTML) {
+                  text = (doc as any).textContent || (doc as any).innerText || '';
                 } else {
                   // Last resort: serialize and parse
                   const serializer = new XMLSerializer();
