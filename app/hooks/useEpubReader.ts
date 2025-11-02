@@ -18,6 +18,14 @@ export interface ReadingProgress {
   last_read_at: string;
 }
 
+export interface Chapter {
+  id: string;
+  label: string;
+  href: string;
+  startPage: number;
+  endPage: number;
+}
+
 export function useEpubReader() {
   const [book, setBook] = useState<Book | null>(null);
   const [loading, setLoading] = useState(false);
@@ -28,6 +36,7 @@ export function useEpubReader() {
   const [totalCharacters, setTotalCharacters] = useState(0);
   const [epubId, setEpubId] = useState<string>('');
   const [savedProgress, setSavedProgress] = useState<ReadingProgress | null>(null);
+  const [chapters, setChapters] = useState<Chapter[]>([]);
   const supabase = createClient();
 
   // Calculate progress percentage
@@ -83,7 +92,7 @@ export function useEpubReader() {
       await epubBook.ready;
 
       const spine = await epubBook.loaded.spine;
-      const allTexts: string[] = [];
+      const spineTexts: { href: string; text: string }[] = [];
 
       // Process each section
       const spineItems = Array.isArray(spine) ? spine : (spine as any)?.items || [];
@@ -125,7 +134,7 @@ export function useEpubReader() {
               }
 
               if (text.trim()) {
-                allTexts.push(text.trim());
+                spineTexts.push({ href: item.href, text: text.trim() });
               }
             }
           } catch (err) {
@@ -134,13 +143,23 @@ export function useEpubReader() {
         }
       }
 
-      // Combine all texts
-      const fullText = allTexts.join('\n\n');
-      setTotalCharacters(fullText.length);
+      // Paginate with spine mapping
+      const { pages: paginatedPages, spinePageMapping } = paginateWithSpineMapping(
+        spineTexts,
+        CHARS_PER_PAGE
+      );
 
-      // Split into pages
-      const paginatedPages = paginateText(fullText, CHARS_PER_PAGE);
+      const fullText = spineTexts.map(st => st.text).join('\n\n');
+      setTotalCharacters(fullText.length);
       setPages(paginatedPages);
+
+      // Extract chapters from TOC and map to pages
+      const navigation = await epubBook.loaded.navigation;
+      const toc = navigation?.toc || [];
+      const extractedChapters = mapChaptersToPages(toc, spinePageMapping);
+      setChapters(extractedChapters);
+
+      console.log(`✅ EPUB: ${paginatedPages.length} páginas, ${extractedChapters.length} capítulos`);
 
       console.log(`✅ EPUB processado: ${paginatedPages.length} páginas com quebras de linha preservadas`);
 
@@ -218,6 +237,93 @@ export function useEpubReader() {
     return pages.length > 0 ? pages : [''];
   };
 
+  // Paginate text with spine href tracking
+  const paginateWithSpineMapping = (
+    spineTexts: { href: string; text: string }[],
+    charsPerPage: number
+  ) => {
+    const pages: string[] = [];
+    const spinePageMapping: { href: string; startPage: number; endPage: number }[] = [];
+
+    for (const spineItem of spineTexts) {
+      const startPage = pages.length;
+      const paragraphs = spineItem.text.split(/\n+/);
+      let currentPage = '';
+
+      for (const paragraph of paragraphs) {
+        const trimmedParagraph = paragraph.trim();
+        if (!trimmedParagraph) continue;
+
+        // If adding this paragraph would exceed the page limit
+        if (currentPage.length + trimmedParagraph.length + 2 > charsPerPage && currentPage.length > 0) {
+          pages.push(currentPage.trim());
+          currentPage = trimmedParagraph + '\n\n';
+        } else {
+          currentPage += trimmedParagraph + '\n\n';
+        }
+      }
+
+      // Add the last page of this spine item if there's content
+      if (currentPage.trim()) {
+        pages.push(currentPage.trim());
+      }
+
+      const endPage = pages.length - 1;
+
+      spinePageMapping.push({
+        href: spineItem.href,
+        startPage,
+        endPage: endPage >= startPage ? endPage : startPage,
+      });
+    }
+
+    return {
+      pages: pages.length > 0 ? pages : [''],
+      spinePageMapping,
+    };
+  };
+
+  // Map TOC chapters to page numbers
+  const mapChaptersToPages = (
+    toc: any[],
+    spinePageMapping: { href: string; startPage: number; endPage: number }[]
+  ): Chapter[] => {
+    const chapters: Chapter[] = [];
+
+    const processNavItem = (item: any, index: number) => {
+      if (!item || !item.href) return;
+
+      // Extract just the file part of href (remove anchors)
+      const hrefFile = item.href.split('#')[0];
+
+      // Find matching spine item
+      const spineItem = spinePageMapping.find(s =>
+        s.href.includes(hrefFile) || hrefFile.includes(s.href)
+      );
+
+      if (spineItem) {
+        chapters.push({
+          id: `chapter-${index}`,
+          label: item.label || `Chapter ${index + 1}`,
+          href: item.href,
+          startPage: spineItem.startPage,
+          endPage: spineItem.endPage,
+        });
+      }
+
+      // Process subitems recursively
+      if (item.subitems && item.subitems.length > 0) {
+        item.subitems.forEach((subitem: any, subIndex: number) => {
+          processNavItem(subitem, index * 100 + subIndex);
+        });
+      }
+    };
+
+    toc.forEach((item, index) => processNavItem(item, index));
+
+    return chapters;
+  };
+
   // Navigation functions
   const nextPage = useCallback(() => {
     setCurrentPage((prev) => Math.min(prev + 1, pages.length - 1));
@@ -264,6 +370,24 @@ export function useEpubReader() {
     }
   }, [epubId, pages.length, supabase]);
 
+  // Get current chapter and progress
+  const getCurrentChapter = useCallback(() => {
+    const chapter = chapters.find(
+      c => currentPage >= c.startPage && currentPage <= c.endPage
+    );
+    return chapter || null;
+  }, [chapters, currentPage]);
+
+  const getChapterProgress = useCallback(() => {
+    const chapter = getCurrentChapter();
+    if (!chapter) return 0;
+
+    const pagesInChapter = chapter.endPage - chapter.startPage + 1;
+    const pagesRead = currentPage - chapter.startPage + 1;
+
+    return Math.round((pagesRead / pagesInChapter) * 100);
+  }, [getCurrentChapter, currentPage]);
+
   // Reset reader
   const reset = useCallback(() => {
     setBook(null);
@@ -273,6 +397,7 @@ export function useEpubReader() {
     setTotalCharacters(0);
     setEpubId('');
     setSavedProgress(null);
+    setChapters([]);
     setError(null);
   }, []);
 
@@ -291,6 +416,9 @@ export function useEpubReader() {
     totalCharacters,
     currentPageContent: pages[currentPage] || '',
     savedProgress,
+    chapters,
+    currentChapter: getCurrentChapter(),
+    chapterProgress: getChapterProgress(),
     loadEpub,
     nextPage,
     previousPage,
