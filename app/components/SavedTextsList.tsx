@@ -1,4 +1,5 @@
 import { SavedText } from '../hooks/useTexts';
+import Link from 'next/link';
 
 interface SavedTextsListProps {
   texts: SavedText[];
@@ -109,6 +110,23 @@ export function SavedTextsList({
                 </div>
 
                 <div className="flex flex-col gap-2">
+                  <Link
+                    href={`/text/${text.id}`}
+                    className="px-4 py-2 rounded-lg font-semibold shadow-sm transition-colors whitespace-nowrap text-center"
+                    style={{
+                      backgroundColor: 'var(--purple-light)',
+                      color: 'var(--button-text)',
+                    }}
+                    onMouseEnter={(e) => {
+                      (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--purple-dark)';
+                    }}
+                    onMouseLeave={(e) => {
+                      (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--purple-light)';
+                    }}
+                  >
+                    📖 Abrir
+                  </Link>
+
                   <button
                     onClick={() => onSelectText(text)}
                     className="px-4 py-2 rounded-lg font-semibold shadow-sm transition-colors whitespace-nowrap"
@@ -127,7 +145,7 @@ export function SavedTextsList({
                       }
                     }}
                   >
-                    {isSelected ? '✓ Selecionado' : '📖 Carregar'}
+                    {isSelected ? '✓ Selecionado' : '⬇️ Carregar'}
                   </button>
 
                   <button

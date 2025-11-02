@@ -11,9 +11,11 @@ import { useEffect, useState } from "react";
 
 interface EpubReaderProps {
   epubId: string;
-  filePath: string;
+  filePath?: string;
   title: string;
   onClose: () => void;
+  mode?: 'epub' | 'text';
+  directText?: string;
 }
 
 export function EpubReader({
@@ -21,6 +23,8 @@ export function EpubReader({
   filePath,
   title,
   onClose,
+  mode = 'epub',
+  directText,
 }: EpubReaderProps) {
   // Keep screen on while reading
   useWakeLock();
@@ -75,20 +79,25 @@ export function EpubReader({
     nextSentence,
   } = useSentenceReader();
 
-  // Load EPUB on mount
+  // Load EPUB or direct text on mount
   useEffect(() => {
-    loadEpub(filePath, title, epubId);
-  }, [filePath, title, epubId, loadEpub]);
+    if (mode === 'epub' && filePath) {
+      loadEpub(filePath, title, epubId);
+    } else if (mode === 'text' && directText) {
+      // For direct text mode, set the text directly
+      setText(directText);
+    }
+  }, [mode, filePath, directText, title, epubId, loadEpub, setText]);
 
-  // Update text when page changes or when content is loaded
+  // Update text when page changes or when content is loaded (EPUB mode only)
   useEffect(() => {
-    if (currentPageContent) {
+    if (mode === 'epub' && currentPageContent) {
       setText(currentPageContent);
       if (currentPage > 0) {
         handleStop(); // Stop playback when changing pages (but not on initial load)
       }
     }
-  }, [currentPageContent, currentPage, totalPages, setText, handleStop]);
+  }, [mode, currentPageContent, currentPage, totalPages, setText, handleStop]);
 
   // Load saved sentence position when progress is loaded
   useEffect(() => {
@@ -162,13 +171,13 @@ export function EpubReader({
               className="text-lg font-semibold transition-colors"
               style={{ color: "var(--foreground)" }}
             >
-              Carregando EPUB...
+              {mode === 'epub' ? 'Carregando EPUB...' : 'Carregando texto...'}
             </p>
             <p
               className="text-sm mt-2 transition-colors"
               style={{ color: "var(--text-secondary)" }}
             >
-              Processando e paginando o livro
+              {mode === 'epub' ? 'Processando e paginando o livro' : 'Preparando texto para leitura'}
             </p>
           </div>
         </div>
@@ -192,7 +201,7 @@ export function EpubReader({
               className="text-lg font-semibold mb-2 transition-colors"
               style={{ color: "var(--foreground)" }}
             >
-              Erro ao carregar EPUB
+              {mode === 'epub' ? 'Erro ao carregar EPUB' : 'Erro ao carregar texto'}
             </p>
             <p className="text-sm mb-4" style={{ color: "var(--red-light)" }}>
               {error}
@@ -233,7 +242,7 @@ export function EpubReader({
         >
           {/* Header */}
           <div
-            className="text-white p-3 md:p-6 rounded-t-lg transition-colors flex-shrink-0"
+            className="text-white p-3 md:p-6 rounded-t-lg transition-colors flex-shrink-0 mb-2 md:mb-3"
             style={{
               background:
                 "linear-gradient(to right, var(--purple-light), var(--blue-light))",
@@ -242,16 +251,18 @@ export function EpubReader({
             <div className="flex items-center justify-between gap-2 mb-2 md:mb-4">
               <div className="flex-1 min-w-0">
                 <h2 className="text-lg md:text-2xl font-bold mb-1 md:mb-2 truncate">
-                  📖 {bookTitle}
+                  {mode === 'epub' ? '📖' : '📝'} {bookTitle}
                 </h2>
-                <div className="flex items-center gap-2 md:gap-4 text-xs md:text-sm flex-wrap">
-                  <span className="whitespace-nowrap">
-                    P. {currentPage + 1}/{totalPages}
-                  </span>
-                  <span className="bg-white bg-opacity-20 px-2 md:px-3 py-0.5 md:py-1 rounded-full text-black text-xs">
-                    {progressPercentage}%
-                  </span>
-                </div>
+                {mode === 'epub' && (
+                  <div className="flex items-center gap-2 md:gap-4 text-xs md:text-sm flex-wrap">
+                    <span className="whitespace-nowrap">
+                      P. {currentPage + 1}/{totalPages}
+                    </span>
+                    <span className="bg-white bg-opacity-20 px-2 md:px-3 py-0.5 md:py-1 rounded-full text-black text-xs">
+                      {progressPercentage}%
+                    </span>
+                  </div>
+                )}
               </div>
               <div className="flex items-center gap-1 md:gap-2 flex-shrink-0">
                 <ThemeToggle />
@@ -277,19 +288,21 @@ export function EpubReader({
               </div>
             </div>
 
-            {/* Progress Bar */}
-            <div className="w-full bg-white bg-opacity-30 rounded-full h-2">
-              <div
-                className="bg-white h-2 rounded-full transition-all duration-300"
-                style={{ width: `${progressPercentage}%` }}
-              ></div>
-            </div>
+            {/* Progress Bar (EPUB mode only) */}
+            {mode === 'epub' && (
+              <div className="w-full bg-white bg-opacity-30 rounded-full h-2">
+                <div
+                  className="bg-white h-2 rounded-full transition-all duration-300"
+                  style={{ width: `${progressPercentage}%` }}
+                ></div>
+              </div>
+            )}
           </div>
-          
-          {/* Saved Progress Indicator */}
-          {savedProgress && (
+
+          {/* Saved Progress Indicator (EPUB mode only) */}
+          {mode === 'epub' && savedProgress && (
             <div
-              className="text-xs md:text-sm px-2 md:px-3 py-1 md:py-1.5 rounded border my-2 md:my-3 transition-colors"
+              className="text-xs md:text-sm px-2 md:px-3 py-1 md:py-1.5 rounded border mb-2 md:mb-3 transition-colors"
               style={{
                 backgroundColor: "var(--green-bg)",
                 borderColor: "var(--green-light)",
@@ -313,79 +326,83 @@ export function EpubReader({
             </div>
           )}
 
-          {/* Page Navigation */}
+          {/* Page Navigation & Controls */}
           <div
             className="bg-opacity-95 backdrop-blur-sm flex items-center justify-between gap-1.5 md:gap-2 pb-2 md:pb-3 rounded transition-colors"
             style={{ backgroundColor: "var(--card-bg)" }}
           >
-            <button
-              onClick={handlePreviousPage}
-              disabled={!hasPreviousPage || isPlaying}
-              className="p-1.5 md:p-2 rounded transition-colors"
-              style={{
-                backgroundColor:
-                  !hasPreviousPage || isPlaying
-                    ? "var(--gray-300)"
-                    : "var(--gray-600)",
-                color: "var(--button-text)",
-                cursor:
-                  !hasPreviousPage || isPlaying ? "not-allowed" : "pointer",
-              }}
-              onMouseEnter={(e) => {
-                if (hasPreviousPage && !isPlaying) {
-                  (e.currentTarget as HTMLElement).style.backgroundColor =
-                    "var(--gray-700)";
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (hasPreviousPage && !isPlaying) {
-                  (e.currentTarget as HTMLElement).style.backgroundColor =
-                    "var(--gray-600)";
-                }
-              }}
-              title="Página anterior"
-            >
-              ⏪
-            </button>
+            {mode === 'epub' && (
+              <>
+                <button
+                  onClick={handlePreviousPage}
+                  disabled={!hasPreviousPage || isPlaying}
+                  className="p-1.5 md:p-2 rounded transition-colors"
+                  style={{
+                    backgroundColor:
+                      !hasPreviousPage || isPlaying
+                        ? "var(--gray-300)"
+                        : "var(--gray-600)",
+                    color: "var(--button-text)",
+                    cursor:
+                      !hasPreviousPage || isPlaying ? "not-allowed" : "pointer",
+                  }}
+                  onMouseEnter={(e) => {
+                    if (hasPreviousPage && !isPlaying) {
+                      (e.currentTarget as HTMLElement).style.backgroundColor =
+                        "var(--gray-700)";
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (hasPreviousPage && !isPlaying) {
+                      (e.currentTarget as HTMLElement).style.backgroundColor =
+                        "var(--gray-600)";
+                    }
+                  }}
+                  title="Página anterior"
+                >
+                  ⏪
+                </button>
 
-            <span
-              className="text-xs md:text-sm font-semibold transition-colors"
-              style={{ color: "var(--text-secondary)" }}
-            >
-              {currentPage + 1}/{totalPages}
-            </span>
+                <span
+                  className="text-xs md:text-sm font-semibold transition-colors"
+                  style={{ color: "var(--text-secondary)" }}
+                >
+                  {currentPage + 1}/{totalPages}
+                </span>
 
-            <button
-              onClick={handleNextPage}
-              disabled={!hasNextPage || isPlaying}
-              className="p-1.5 md:p-2 rounded transition-colors"
-              style={{
-                backgroundColor:
-                  !hasNextPage || isPlaying
-                    ? "var(--gray-300)"
-                    : "var(--gray-600)",
-                color: "var(--button-text)",
-                cursor: !hasNextPage || isPlaying ? "not-allowed" : "pointer",
-              }}
-              onMouseEnter={(e) => {
-                if (hasNextPage && !isPlaying) {
-                  (e.currentTarget as HTMLElement).style.backgroundColor =
-                    "var(--gray-700)";
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (hasNextPage && !isPlaying) {
-                  (e.currentTarget as HTMLElement).style.backgroundColor =
-                    "var(--gray-600)";
-                }
-              }}
-              title="Próxima página"
-            >
-              ⏩
-            </button>
+                <button
+                  onClick={handleNextPage}
+                  disabled={!hasNextPage || isPlaying}
+                  className="p-1.5 md:p-2 rounded transition-colors"
+                  style={{
+                    backgroundColor:
+                      !hasNextPage || isPlaying
+                        ? "var(--gray-300)"
+                        : "var(--gray-600)",
+                    color: "var(--button-text)",
+                    cursor: !hasNextPage || isPlaying ? "not-allowed" : "pointer",
+                  }}
+                  onMouseEnter={(e) => {
+                    if (hasNextPage && !isPlaying) {
+                      (e.currentTarget as HTMLElement).style.backgroundColor =
+                        "var(--gray-700)";
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (hasNextPage && !isPlaying) {
+                      (e.currentTarget as HTMLElement).style.backgroundColor =
+                        "var(--gray-600)";
+                    }
+                  }}
+                  title="Próxima página"
+                >
+                  ⏩
+                </button>
+              </>
+            )}
 
             {/* TTS Controls */}
-            <div className="flex items-center gap-1">
+            <div className={`flex items-center gap-1 ${mode === 'text' ? 'flex-1 justify-center' : ''}`}>
               <PlaybackControls
                 isPlaying={isPlaying}
                 isPaused={isPaused}
@@ -397,29 +414,31 @@ export function EpubReader({
               />
             </div>
 
-            <button
-              onClick={handleSaveProgress}
-              className="px-2 md:px-3 py-1 md:py-2 rounded text-xs md:text-sm font-semibold transition-colors whitespace-nowrap"
-              style={{
-                backgroundColor: "var(--yellow-light)",
-                color: "var(--button-text)",
-              }}
-              onMouseEnter={(e) => {
-                (e.currentTarget as HTMLElement).style.backgroundColor =
-                  "var(--yellow-dark)";
-              }}
-              onMouseLeave={(e) => {
-                (e.currentTarget as HTMLElement).style.backgroundColor =
-                  "var(--yellow-light)";
-              }}
-              title="Salvar progresso"
-            >
-              🔖
-            </button>
+            {mode === 'epub' && (
+              <button
+                onClick={handleSaveProgress}
+                className="px-2 md:px-3 py-1 md:py-2 rounded text-xs md:text-sm font-semibold transition-colors whitespace-nowrap"
+                style={{
+                  backgroundColor: "var(--yellow-light)",
+                  color: "var(--button-text)",
+                }}
+                onMouseEnter={(e) => {
+                  (e.currentTarget as HTMLElement).style.backgroundColor =
+                    "var(--yellow-dark)";
+                }}
+                onMouseLeave={(e) => {
+                  (e.currentTarget as HTMLElement).style.backgroundColor =
+                    "var(--yellow-light)";
+                }}
+                title="Salvar progresso"
+              >
+                🔖
+              </button>
+            )}
           </div>
 
-          {/* Chapter Progress */}
-          {currentChapter && (
+          {/* Chapter Progress (EPUB mode only) */}
+          {mode === 'epub' && currentChapter && (
             <div className="px-2 md:px-3">
               <div
                 className="flex items-center gap-2 cursor-pointer"
