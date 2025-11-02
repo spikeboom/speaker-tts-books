@@ -7,7 +7,7 @@ import { PlaybackControls } from "./PlaybackControls";
 import { VoiceSettings } from "./VoiceSettings";
 import { SentenceHighlight } from "./SentenceHighlight";
 import ThemeToggle from "./ThemeToggle";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 
 interface EpubReaderProps {
   epubId: string;
@@ -31,6 +31,12 @@ export function EpubReader({
 
   // Toggle between fraction and percentage for chapter progress
   const [showChapterPercentage, setShowChapterPercentage] = useState(false);
+
+  // Auto-save state
+  const [lastAutoSave, setLastAutoSave] = useState<{page: number, sentence: number} | null>(null);
+  const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
+  const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const autoSaveStatusTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const {
     loading,
@@ -79,6 +85,34 @@ export function EpubReader({
     nextSentence,
   } = useSentenceReader();
 
+  // Silent auto-save function
+  const autoSaveProgress = useCallback(async () => {
+    if (mode !== 'epub') return; // Only auto-save for EPUB mode
+
+    // Check if progress has changed
+    if (lastAutoSave?.page === currentPage && lastAutoSave?.sentence === currentSentenceIndex) {
+      return; // No change, don't save again
+    }
+
+    setAutoSaveStatus('saving');
+    const success = await saveProgress(currentPage, currentSentenceIndex);
+
+    if (success) {
+      setLastAutoSave({ page: currentPage, sentence: currentSentenceIndex });
+      setAutoSaveStatus('saved');
+
+      // Clear "saved" status after 3 seconds
+      if (autoSaveStatusTimerRef.current) {
+        clearTimeout(autoSaveStatusTimerRef.current);
+      }
+      autoSaveStatusTimerRef.current = setTimeout(() => {
+        setAutoSaveStatus('idle');
+      }, 3000);
+    } else {
+      setAutoSaveStatus('idle');
+    }
+  }, [mode, currentPage, currentSentenceIndex, lastAutoSave, saveProgress]);
+
   // Load EPUB or direct text on mount
   useEffect(() => {
     if (mode === 'epub' && filePath) {
@@ -117,6 +151,58 @@ export function EpubReader({
     }
   }, [savedProgress, currentPage, sentences.length, setCurrentSentence]);
 
+  // Auto-save with 10 second debounce when sentence changes
+  useEffect(() => {
+    if (mode !== 'epub' || !sentences.length) return;
+
+    // Clear existing timer
+    if (autoSaveTimerRef.current) {
+      clearTimeout(autoSaveTimerRef.current);
+    }
+
+    // Set new timer for 10 seconds
+    autoSaveTimerRef.current = setTimeout(() => {
+      autoSaveProgress();
+    }, 10000);
+
+    // Cleanup on unmount or when dependencies change
+    return () => {
+      if (autoSaveTimerRef.current) {
+        clearTimeout(autoSaveTimerRef.current);
+      }
+    };
+  }, [mode, currentPage, currentSentenceIndex, sentences.length, autoSaveProgress]);
+
+  // Save when page loses focus (user switches app/tab)
+  useEffect(() => {
+    if (mode !== 'epub') return;
+
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        // Page is hidden, save immediately
+        autoSaveProgress();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [mode, autoSaveProgress]);
+
+  // Cleanup timers on unmount
+  useEffect(() => {
+    return () => {
+      if (autoSaveTimerRef.current) {
+        clearTimeout(autoSaveTimerRef.current);
+      }
+      if (autoSaveStatusTimerRef.current) {
+        clearTimeout(autoSaveStatusTimerRef.current);
+      }
+    };
+  }, []);
+
   // Handle page navigation
   const handleNextPage = () => {
     if (hasNextPage) {
@@ -146,7 +232,20 @@ export function EpubReader({
     }
   };
 
+  // Wrapper for handlePause to auto-save
+  const handlePauseWithSave = () => {
+    autoSaveProgress();
+    handlePause();
+  };
+
+  // Wrapper for handleStop to auto-save
+  const handleStopWithSave = () => {
+    autoSaveProgress();
+    handleStop();
+  };
+
   const handleClose = () => {
+    autoSaveProgress(); // Save before closing
     handleStop();
     reset();
     onClose();
@@ -407,33 +506,49 @@ export function EpubReader({
                 isPlaying={isPlaying}
                 isPaused={isPaused}
                 onPlay={handlePlay}
-                onPause={handlePause}
-                onStop={handleStop}
+                onPause={handlePauseWithSave}
+                onStop={handleStopWithSave}
                 onReset={handleReset}
                 showReset={true}
               />
             </div>
 
             {mode === 'epub' && (
-              <button
-                onClick={handleSaveProgress}
-                className="px-2 md:px-3 py-1 md:py-2 rounded text-xs md:text-sm font-semibold transition-colors whitespace-nowrap"
-                style={{
-                  backgroundColor: "var(--yellow-light)",
-                  color: "var(--button-text)",
-                }}
-                onMouseEnter={(e) => {
-                  (e.currentTarget as HTMLElement).style.backgroundColor =
-                    "var(--yellow-dark)";
-                }}
-                onMouseLeave={(e) => {
-                  (e.currentTarget as HTMLElement).style.backgroundColor =
-                    "var(--yellow-light)";
-                }}
-                title="Salvar progresso"
-              >
-                🔖
-              </button>
+              <>
+                <button
+                  onClick={handleSaveProgress}
+                  className="px-2 md:px-3 py-1 md:py-2 rounded text-xs md:text-sm font-semibold transition-colors whitespace-nowrap"
+                  style={{
+                    backgroundColor: "var(--yellow-light)",
+                    color: "var(--button-text)",
+                  }}
+                  onMouseEnter={(e) => {
+                    (e.currentTarget as HTMLElement).style.backgroundColor =
+                      "var(--yellow-dark)";
+                  }}
+                  onMouseLeave={(e) => {
+                    (e.currentTarget as HTMLElement).style.backgroundColor =
+                      "var(--yellow-light)";
+                  }}
+                  title="Salvar progresso manualmente"
+                >
+                  🔖
+                </button>
+
+                {/* Auto-save indicator */}
+                {autoSaveStatus !== 'idle' && (
+                  <div
+                    className="text-xs px-2 py-1 rounded transition-colors whitespace-nowrap"
+                    style={{
+                      backgroundColor: autoSaveStatus === 'saving' ? 'var(--blue-bg)' : 'var(--green-bg)',
+                      color: autoSaveStatus === 'saving' ? 'var(--blue-dark)' : 'var(--green-dark)',
+                    }}
+                    title={autoSaveStatus === 'saving' ? 'Salvando...' : 'Salvo automaticamente'}
+                  >
+                    {autoSaveStatus === 'saving' ? '💾...' : '✓'}
+                  </div>
+                )}
+              </>
             )}
           </div>
 
