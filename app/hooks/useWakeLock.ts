@@ -6,7 +6,6 @@ export function useWakeLock() {
   useEffect(() => {
     // Check if Wake Lock API is supported
     if (!navigator.wakeLock) {
-      console.log('Wake Lock API not supported');
       return;
     }
 
@@ -15,11 +14,9 @@ export function useWakeLock() {
         if (!navigator.wakeLock) return;
 
         wakeLockRef.current = await navigator.wakeLock.request('screen');
-        console.log('Wake Lock acquired');
 
         // Listen for release events
         const handleRelease = () => {
-          console.log('Wake Lock released');
           wakeLockRef.current = null;
         };
 

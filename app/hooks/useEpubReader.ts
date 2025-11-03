@@ -159,10 +159,6 @@ export function useEpubReader() {
       const extractedChapters = mapChaptersToPages(toc, spinePageMapping);
       setChapters(extractedChapters);
 
-      console.log(`✅ EPUB: ${paginatedPages.length} páginas, ${extractedChapters.length} capítulos`);
-
-      console.log(`✅ EPUB processado: ${paginatedPages.length} páginas com quebras de linha preservadas`);
-
       // Load saved progress
       const progress = await loadProgress(id);
       if (progress && progress.current_page < paginatedPages.length) {

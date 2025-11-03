@@ -68,3 +68,27 @@ CREATE POLICY "Allow all operations on epub_reading_progress"
 -- Create index for faster queries
 CREATE INDEX IF NOT EXISTS epub_reading_progress_epub_id_idx ON epub_reading_progress(epub_id);
 CREATE INDEX IF NOT EXISTS epub_reading_progress_last_read_at_idx ON epub_reading_progress(last_read_at DESC);
+
+-- Create table for user preferences (speech synthesis settings)
+CREATE TABLE IF NOT EXISTS user_preferences (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  rate DECIMAL(3, 1) NOT NULL DEFAULT 1.0,
+  pitch DECIMAL(3, 1) NOT NULL DEFAULT 1.0,
+  volume DECIMAL(3, 1) NOT NULL DEFAULT 1.0,
+  selected_voice TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Enable Row Level Security
+ALTER TABLE user_preferences ENABLE ROW LEVEL SECURITY;
+
+-- Create policy to allow all operations (for development)
+CREATE POLICY "Allow all operations on user_preferences"
+  ON user_preferences
+  FOR ALL
+  USING (true)
+  WITH CHECK (true);
+
+-- Create index for faster queries
+CREATE INDEX IF NOT EXISTS user_preferences_updated_at_idx ON user_preferences(updated_at DESC);

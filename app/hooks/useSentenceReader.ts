@@ -1,9 +1,17 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { createClient } from '@/utils/supabase/client';
 
 interface ProgressData {
   text: string;
   currentSentenceIndex: number;
   characterPosition: number;
+}
+
+interface PreferencesData {
+  rate: number;
+  pitch: number;
+  volume: number;
+  selectedVoice: string;
 }
 
 export function useSentenceReader() {
@@ -20,6 +28,7 @@ export function useSentenceReader() {
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
   const characterPositionRef = useRef(0);
   const isPausingRef = useRef(false);
+  const supabase = createClient();
 
   // Split text into sentences
   const splitIntoSentences = (inputText: string): string[] => {
@@ -80,21 +89,80 @@ export function useSentenceReader() {
     }
   }, [text, currentSentenceIndex]);
 
+  // Load preferences from Supabase
+  const loadPreferences = useCallback(async () => {
+    try {
+      const { data, error } = await supabase
+        .from('user_preferences')
+        .select('*')
+        .order('updated_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (error) {
+        return;
+      }
+
+      if (data) {
+        setRate(Number(data.rate) || 1);
+        setPitch(Number(data.pitch) || 1);
+        setVolume(Number(data.volume) || 1);
+        if (data.selected_voice) {
+          setSelectedVoice(data.selected_voice);
+        }
+      }
+    } catch (err) {
+      console.error('Error loading preferences:', err);
+    }
+  }, [supabase]);
+
+  // Save preferences to Supabase
+  const savePreferences = useCallback(async (preferences: Partial<PreferencesData>) => {
+    try {
+      // Check if preferences exist
+      const { data: existing, error: fetchError } = await supabase
+        .from('user_preferences')
+        .select('id')
+        .order('updated_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      const updateData = {
+        rate: preferences.rate ?? rate,
+        pitch: preferences.pitch ?? pitch,
+        volume: preferences.volume ?? volume,
+        selected_voice: preferences.selectedVoice ?? selectedVoice,
+        updated_at: new Date().toISOString(),
+      };
+
+      if (existing && !fetchError) {
+        // Update existing preferences
+        await supabase
+          .from('user_preferences')
+          .update(updateData)
+          .eq('id', existing.id)
+          .select();
+      } else {
+        // Create new preferences
+        await supabase
+          .from('user_preferences')
+          .insert([updateData])
+          .select();
+      }
+    } catch (error) {
+      console.error('Error saving preferences:', error);
+    }
+  }, [supabase, rate, pitch, volume, selectedVoice]);
+
+  // Load preferences on mount
+  useEffect(() => {
+    loadPreferences();
+  }, [loadPreferences]);
+
   // Load voices
   useEffect(() => {
     const loadVoices = () => {
       const availableVoices = window.speechSynthesis.getVoices();
-
-      // Debug: log all available voices on Android
-      const isAndroid = /Android/i.test(navigator.userAgent);
-      if (isAndroid) {
-        console.log('🔊 Android - Available voices:', availableVoices.map(v => ({
-          name: v.name,
-          lang: v.lang,
-          voiceURI: v.voiceURI,
-          default: v.default
-        })));
-      }
 
       setVoices(availableVoices);
 
@@ -173,13 +241,6 @@ export function useSentenceReader() {
           // Only set lang and voiceURI
           utterance.lang = normalizedLang;
           (utterance as any).voiceURI = voice.voiceURI;
-
-          console.log('🔊 Android - Speaking with:', {
-            selectedVoice: voice.name,
-            originalLang: voice.lang,
-            normalizedLang: normalizedLang,
-            voiceURI: voice.voiceURI
-          });
         } else {
           // On iOS and desktop, set all properties
           utterance.voice = voice;
@@ -342,6 +403,27 @@ export function useSentenceReader() {
     }
   }, [currentSentenceIndex, sentences.length, isPlaying, speakSentence]);
 
+  // Wrapper functions that save to Supabase
+  const handleSetRate = useCallback((newRate: number) => {
+    setRate(newRate);
+    savePreferences({ rate: newRate });
+  }, [savePreferences]);
+
+  const handleSetPitch = useCallback((newPitch: number) => {
+    setPitch(newPitch);
+    savePreferences({ pitch: newPitch });
+  }, [savePreferences]);
+
+  const handleSetVolume = useCallback((newVolume: number) => {
+    setVolume(newVolume);
+    savePreferences({ volume: newVolume });
+  }, [savePreferences]);
+
+  const handleSetSelectedVoice = useCallback((voiceName: string) => {
+    setSelectedVoice(voiceName);
+    savePreferences({ selectedVoice: voiceName });
+  }, [savePreferences]);
+
   return {
     text,
     setText,
@@ -351,13 +433,13 @@ export function useSentenceReader() {
     isPaused,
     voices,
     selectedVoice,
-    setSelectedVoice,
+    setSelectedVoice: handleSetSelectedVoice,
     rate,
-    setRate,
+    setRate: handleSetRate,
     pitch,
-    setPitch,
+    setPitch: handleSetPitch,
     volume,
-    setVolume,
+    setVolume: handleSetVolume,
     handlePlay,
     handlePause,
     handleStop,
