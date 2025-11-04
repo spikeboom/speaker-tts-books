@@ -9,6 +9,36 @@ export interface SavedText {
   updated_at: string;
 }
 
+// Clean markdown and special characters from text
+const cleanText = (text: string): string => {
+  let cleaned = text
+    // Replace em-dash with period and space
+    .replaceAll('—', ' . ')
+    // Remove horizontal rules (---, ***, ___)
+    .replaceAll(/^[\s]*(---|\*\*\*|___)[\s]*$/gm, '')
+    // Remove markdown bold
+    .replaceAll(/\*\*(.+?)\*\*/g, '$1')
+    .replaceAll(/__(.+?)__/g, '$1')
+    // Remove markdown italic
+    .replaceAll(/\*(.+?)\*/g, '$1')
+    .replaceAll(/_(.+?)_/g, '$1')
+    // Remove markdown links [text](url) -> text
+    .replaceAll(/\[(.+?)\]\(.+?\)/g, '$1')
+    // Remove markdown headers
+    .replaceAll(/^#{1,6}\s+/gm, '')
+    // Remove markdown code blocks
+    .replaceAll(/```[\s\S]*?```/g, '')
+    // Remove inline code
+    .replaceAll(/`(.+?)`/g, '$1')
+    // Clean up extra spaces but preserve line breaks and paragraph breaks
+    .split('\n')
+    .map(line => line.replaceAll(/\s+/g, ' ').trim())
+    .join('\n')
+    .trim();
+
+  return cleaned;
+};
+
 export function useTexts() {
   const [texts, setTexts] = useState<SavedText[]>([]);
   const [loading, setLoading] = useState(false);
@@ -48,9 +78,11 @@ export function useTexts() {
       setLoading(true);
       setError(null);
 
+      const cleanedContent = cleanText(content);
+
       const { error: insertError } = await supabase
         .from('saved_texts')
-        .insert([{ title, content }]);
+        .insert([{ title, content: cleanedContent }]);
 
       if (insertError) throw insertError;
 
@@ -72,9 +104,11 @@ export function useTexts() {
       setLoading(true);
       setError(null);
 
+      const cleanedContent = cleanText(content);
+
       const { error: updateError } = await supabase
         .from('saved_texts')
-        .update({ title, content, updated_at: new Date().toISOString() })
+        .update({ title, content: cleanedContent, updated_at: new Date().toISOString() })
         .eq('id', id);
 
       if (updateError) throw updateError;
@@ -116,6 +150,31 @@ export function useTexts() {
     }
   }, [supabase, fetchTexts]);
 
+  // Delete all texts
+  const deleteAllTexts = useCallback(async (): Promise<boolean> => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const { error: deleteError } = await supabase
+        .from('saved_texts')
+        .delete()
+        .neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all records
+
+      if (deleteError) throw deleteError;
+
+      // Refresh the list
+      await fetchTexts();
+      return true;
+    } catch (err) {
+      console.error('Error deleting all texts:', err);
+      setError(err instanceof Error ? err.message : 'Failed to delete all texts');
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  }, [supabase, fetchTexts]);
+
   return {
     texts,
     loading,
@@ -123,6 +182,7 @@ export function useTexts() {
     saveText,
     updateText,
     deleteText,
+    deleteAllTexts,
     refreshTexts: fetchTexts,
   };
 }

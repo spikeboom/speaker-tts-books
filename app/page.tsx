@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { TextInput } from './components/TextInput';
 import { PlaybackControls } from './components/PlaybackControls';
@@ -20,6 +21,7 @@ export default function Home() {
   // Keep screen on while using the app
   useWakeLock();
 
+  const router = useRouter();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentTextId, setCurrentTextId] = useState<string | undefined>(undefined);
   const [activeTab, setActiveTab] = useState<'texts' | 'epubs'>('texts');
@@ -56,6 +58,7 @@ export default function Home() {
     error: textsError,
     saveText,
     deleteText,
+    deleteAllTexts,
   } = useTexts();
 
   const {
@@ -75,6 +78,21 @@ export default function Home() {
     }
   };
 
+  const handleSaveAndRead = async () => {
+    if (!text.trim()) return;
+    const title = 'Leitura ' + new Date().toLocaleString('pt-BR');
+    const success = await saveText(title, text);
+    if (success) {
+      const savedTexts = await fetch('/api/texts').then(res => res.json());
+      const newestText = savedTexts[0];
+      if (newestText) {
+        router.push(`/text/${newestText.id}`);
+      }
+    } else {
+      alert('Erro ao salvar texto. Tente novamente.');
+    }
+  };
+
   const handleSelectText = (savedText: { id: string; title: string; content: string }) => {
     setText(savedText.content);
     setCurrentTextId(savedText.id);
@@ -90,6 +108,19 @@ export default function Home() {
       alert('Texto excluído com sucesso!');
     } else {
       alert('Erro ao excluir texto.');
+    }
+  };
+
+  const handleDeleteAllTexts = async () => {
+    if (!confirm('Tem certeza que deseja apagar TODOS os textos salvos? Esta ação não pode ser desfeita.')) {
+      return;
+    }
+    const success = await deleteAllTexts();
+    if (success) {
+      setCurrentTextId(undefined);
+      alert('Todos os textos foram excluídos!');
+    } else {
+      alert('Erro ao apagar textos.');
     }
   };
 
@@ -146,47 +177,68 @@ export default function Home() {
 
         <div className="mb-6">
           {/* Tabs */}
-          <div className="rounded-t-lg shadow-xl p-2 flex gap-2 transition-colors" style={{ backgroundColor: 'var(--card-bg)' }}>
-            <button
-              onClick={() => setActiveTab('texts')}
-              className="flex-1 px-4 py-3 rounded-lg font-semibold transition-colors"
-              style={{
-                backgroundColor: activeTab === 'texts' ? 'var(--blue-light)' : 'var(--gray-100)',
-                color: activeTab === 'texts' ? 'var(--button-text)' : 'var(--text-secondary)',
-              }}
-              onMouseEnter={(e) => {
-                if (activeTab !== 'texts') {
-                  (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--hover-bg)';
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (activeTab !== 'texts') {
-                  (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--gray-100)';
-                }
-              }}
-            >
-              📝 Textos Salvos ({texts.length})
-            </button>
-            <button
-              onClick={() => setActiveTab('epubs')}
-              className="flex-1 px-4 py-3 rounded-lg font-semibold transition-colors"
-              style={{
-                backgroundColor: activeTab === 'epubs' ? 'var(--purple-light)' : 'var(--gray-100)',
-                color: activeTab === 'epubs' ? 'var(--button-text)' : 'var(--text-secondary)',
-              }}
-              onMouseEnter={(e) => {
-                if (activeTab !== 'epubs') {
-                  (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--hover-bg)';
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (activeTab !== 'epubs') {
-                  (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--gray-100)';
-                }
-              }}
-            >
-              📚 EPUBs ({epubs.length})
-            </button>
+          <div className="rounded-t-lg shadow-xl p-2 flex gap-2 items-center justify-between transition-colors" style={{ backgroundColor: 'var(--card-bg)' }}>
+            <div className="flex gap-2 flex-1">
+              <button
+                onClick={() => setActiveTab('texts')}
+                className="flex-1 px-4 py-3 rounded-lg font-semibold transition-colors"
+                style={{
+                  backgroundColor: activeTab === 'texts' ? 'var(--blue-light)' : 'var(--gray-100)',
+                  color: activeTab === 'texts' ? 'var(--button-text)' : 'var(--text-secondary)',
+                }}
+                onMouseEnter={(e) => {
+                  if (activeTab !== 'texts') {
+                    (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--hover-bg)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (activeTab !== 'texts') {
+                    (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--gray-100)';
+                  }
+                }}
+              >
+                📝 Textos Salvos ({texts.length})
+              </button>
+              <button
+                onClick={() => setActiveTab('epubs')}
+                className="flex-1 px-4 py-3 rounded-lg font-semibold transition-colors"
+                style={{
+                  backgroundColor: activeTab === 'epubs' ? 'var(--purple-light)' : 'var(--gray-100)',
+                  color: activeTab === 'epubs' ? 'var(--button-text)' : 'var(--text-secondary)',
+                }}
+                onMouseEnter={(e) => {
+                  if (activeTab !== 'epubs') {
+                    (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--hover-bg)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (activeTab !== 'epubs') {
+                    (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--gray-100)';
+                  }
+                }}
+              >
+                📚 EPUBs ({epubs.length})
+              </button>
+            </div>
+            {activeTab === 'texts' && texts.length > 0 && (
+              <button
+                onClick={handleDeleteAllTexts}
+                className="px-3 py-2 rounded-lg font-semibold text-sm transition-colors"
+                style={{
+                  backgroundColor: 'var(--red-light)',
+                  color: 'var(--button-text)',
+                }}
+                onMouseEnter={(e) => {
+                  (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--red-dark)';
+                }}
+                onMouseLeave={(e) => {
+                  (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--red-light)';
+                }}
+                title="Apagar TODOS os textos salvos"
+              >
+                🗑️ Apagar Todos
+              </button>
+            )}
           </div>
 
           {/* Tab Content */}
@@ -250,28 +302,53 @@ export default function Home() {
             <h2 className="text-xl font-semibold" style={{ color: 'var(--foreground)' }}>
               ✏️ Texto para Leitura
             </h2>
-            <button
-              onClick={() => setIsModalOpen(true)}
-              disabled={!text.trim() || (isPlaying && !isPaused)}
-              className="px-4 py-2 rounded-lg font-semibold shadow-md transition-colors"
-              style={{
-                backgroundColor: !text.trim() || (isPlaying && !isPaused) ? 'var(--gray-300)' : 'var(--green-light)',
-                color: 'var(--button-text)',
-                cursor: !text.trim() || (isPlaying && !isPaused) ? 'not-allowed' : 'pointer',
-              }}
-              onMouseEnter={(e) => {
-                if (text.trim() && !(isPlaying && !isPaused)) {
-                  (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--green-dark)';
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (text.trim() && !(isPlaying && !isPaused)) {
-                  (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--green-light)';
-                }
-              }}
-            >
-              💾 Salvar Texto
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={handleSaveAndRead}
+                disabled={!text.trim() || (isPlaying && !isPaused)}
+                className="px-4 py-2 rounded-lg font-semibold shadow-md transition-colors"
+                style={{
+                  backgroundColor: !text.trim() || (isPlaying && !isPaused) ? 'var(--gray-300)' : 'var(--blue-light)',
+                  color: 'var(--button-text)',
+                  cursor: !text.trim() || (isPlaying && !isPaused) ? 'not-allowed' : 'pointer',
+                }}
+                onMouseEnter={(e) => {
+                  if (text.trim() && !(isPlaying && !isPaused)) {
+                    (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--blue-dark)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (text.trim() && !(isPlaying && !isPaused)) {
+                    (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--blue-light)';
+                  }
+                }}
+                title="Salvar e abrir em tela cheia para leitura"
+              >
+                📖 Ler em Tela Cheia
+              </button>
+              <button
+                onClick={() => setIsModalOpen(true)}
+                disabled={!text.trim() || (isPlaying && !isPaused)}
+                className="px-4 py-2 rounded-lg font-semibold shadow-md transition-colors"
+                style={{
+                  backgroundColor: !text.trim() || (isPlaying && !isPaused) ? 'var(--gray-300)' : 'var(--green-light)',
+                  color: 'var(--button-text)',
+                  cursor: !text.trim() || (isPlaying && !isPaused) ? 'not-allowed' : 'pointer',
+                }}
+                onMouseEnter={(e) => {
+                  if (text.trim() && !(isPlaying && !isPaused)) {
+                    (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--green-dark)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (text.trim() && !(isPlaying && !isPaused)) {
+                    (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--green-light)';
+                  }
+                }}
+              >
+                💾 Salvar Texto
+              </button>
+            </div>
           </div>
 
           <TextInput value={text} onChange={setText} disabled={isPlaying && !isPaused} />
