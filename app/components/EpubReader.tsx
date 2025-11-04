@@ -36,7 +36,6 @@ export function EpubReader({
   const [lastAutoSave, setLastAutoSave] = useState<{page: number, sentence: number} | null>(null);
   const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
   const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const autoSaveStatusTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const {
     loading,
@@ -100,14 +99,6 @@ export function EpubReader({
     if (success) {
       setLastAutoSave({ page: currentPage, sentence: currentSentenceIndex });
       setAutoSaveStatus('saved');
-
-      // Clear "saved" status after 3 seconds
-      if (autoSaveStatusTimerRef.current) {
-        clearTimeout(autoSaveStatusTimerRef.current);
-      }
-      autoSaveStatusTimerRef.current = setTimeout(() => {
-        setAutoSaveStatus('idle');
-      }, 3000);
     } else {
       setAutoSaveStatus('idle');
     }
@@ -196,9 +187,6 @@ export function EpubReader({
     return () => {
       if (autoSaveTimerRef.current) {
         clearTimeout(autoSaveTimerRef.current);
-      }
-      if (autoSaveStatusTimerRef.current) {
-        clearTimeout(autoSaveStatusTimerRef.current);
       }
     };
   }, []);
@@ -399,7 +387,19 @@ export function EpubReader({
           </div>
 
           {/* Saved Progress Indicator (EPUB mode only) */}
-          {mode === 'epub' && savedProgress && (
+          {mode === 'epub' && autoSaveStatus === 'saving' && (
+            <div
+              className="text-xs md:text-sm px-2 md:px-3 py-1 md:py-1.5 rounded border mb-2 md:mb-3 transition-colors"
+              style={{
+                backgroundColor: "var(--yellow-bg)",
+                borderColor: "var(--yellow-light)",
+                color: "var(--yellow-dark)",
+              }}
+            >
+              💾 Salvando...
+            </div>
+          )}
+          {mode === 'epub' && autoSaveStatus === 'saved' && (
             <div
               className="text-xs md:text-sm px-2 md:px-3 py-1 md:py-1.5 rounded border mb-2 md:mb-3 transition-colors"
               style={{
@@ -409,18 +409,15 @@ export function EpubReader({
               }}
             >
               <span className="block md:inline">
-                ✅ Salvo:{" "}
+                ✅ Salvo:
                 <span className="md:hidden">
-                  P.{savedProgress.current_page + 1} F.
-                  {savedProgress.current_sentence + 1}
+                  {" "}P.{currentPage + 1} F.
+                  {currentSentenceIndex + 1} (agora)
                 </span>
                 <span className="hidden md:inline">
-                  Página {savedProgress.current_page + 1}, Frase{" "}
-                  {savedProgress.current_sentence + 1}
+                  {" "}Página {currentPage + 1}, Frase{" "}
+                  {currentSentenceIndex + 1} (agora)
                 </span>
-                {savedProgress.current_page === currentPage && (
-                  <span className="ml-1 font-semibold">(agora)</span>
-                )}
               </span>
             </div>
           )}
@@ -534,20 +531,6 @@ export function EpubReader({
                 >
                   🔖
                 </button>
-
-                {/* Auto-save indicator */}
-                {autoSaveStatus !== 'idle' && (
-                  <div
-                    className="text-xs px-2 py-1 rounded transition-colors whitespace-nowrap"
-                    style={{
-                      backgroundColor: autoSaveStatus === 'saving' ? 'var(--blue-bg)' : 'var(--green-bg)',
-                      color: autoSaveStatus === 'saving' ? 'var(--blue-dark)' : 'var(--green-dark)',
-                    }}
-                    title={autoSaveStatus === 'saving' ? 'Salvando...' : 'Salvo automaticamente'}
-                  >
-                    {autoSaveStatus === 'saving' ? '💾...' : '✓'}
-                  </div>
-                )}
               </>
             )}
           </div>
