@@ -35,15 +35,30 @@ export function useSentenceReader() {
     if (!inputText.trim()) return [];
 
     // Split by common sentence delimiters while keeping the delimiter and whitespace
-    const rawSentences = inputText.split(/([.!?]+(?:\s+|\n+))|([.!?]+$)/g);
+    // Pattern handles: period/exclamation/question followed by space/newline, double newlines, or at end of text
+    const rawSentences = inputText.split(/(\n\n+)|([.!?]+(?:\s+|\n))|([.!?]+$)/g);
     const processedSentences: string[] = [];
+
+    console.log('=== RAW SPLIT RESULT ===');
+    rawSentences.slice(0, 10).forEach((part, i) => {
+      console.log(`[Part ${i}]:`, JSON.stringify(part));
+    });
+    if (rawSentences.length > 10) {
+      console.log(`... and ${rawSentences.length - 10} more parts`);
+    }
 
     for (let i = 0; i < rawSentences.length; i++) {
       const part = rawSentences[i];
       if (!part) continue;
 
-      // If it's a delimiter with whitespace, add it to the previous sentence
-      if (/^[.!?]+(?:\s+|\n+)$/.test(part) && processedSentences.length > 0) {
+      // If it's a double newline (paragraph break), close the current sentence
+      if (/^\n\n+$/.test(part)) {
+        if (processedSentences.length > 0) {
+          processedSentences[processedSentences.length - 1] += part;
+        }
+      }
+      // If it's a delimiter with whitespace/newline, add it to the previous sentence and close it
+      else if (/^[.!?]+(?:\s+|\n)$/.test(part) && processedSentences.length > 0) {
         processedSentences[processedSentences.length - 1] += part;
       }
       // If it's a delimiter at the end, add it to the previous sentence
@@ -56,7 +71,20 @@ export function useSentenceReader() {
       }
     }
 
-    return processedSentences.filter(s => s.trim().length > 0);
+    const filtered = processedSentences.filter(s => s.trim().length > 0);
+
+    // Debug log: show each sentence with visible line breaks
+    console.log('=== SENTENCE BREAKDOWN ===');
+    filtered.forEach((sentence, index) => {
+      console.log(`[Sentence ${index}]:`, JSON.stringify(sentence));
+      console.log(`  Raw: ${sentence}`);
+      console.log(`  Trimmed: "${sentence.trim()}"`);
+      console.log(`  Has newline: ${sentence.includes('\n')}`);
+      console.log('---');
+    });
+    console.log(`Total sentences: ${filtered.length}`);
+
+    return filtered;
   };
 
   // Load progress from localStorage
