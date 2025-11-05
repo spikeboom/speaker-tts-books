@@ -39,14 +39,6 @@ export function useSentenceReader() {
     const rawSentences = inputText.split(/(\n\n+)|([.!?]+(?:\s+|\n))|([.!?]+$)/g);
     const processedSentences: string[] = [];
 
-    console.log('=== RAW SPLIT RESULT ===');
-    rawSentences.slice(0, 10).forEach((part, i) => {
-      console.log(`[Part ${i}]:`, JSON.stringify(part));
-    });
-    if (rawSentences.length > 10) {
-      console.log(`... and ${rawSentences.length - 10} more parts`);
-    }
-
     for (let i = 0; i < rawSentences.length; i++) {
       const part = rawSentences[i];
       if (!part) continue;
@@ -71,20 +63,7 @@ export function useSentenceReader() {
       }
     }
 
-    const filtered = processedSentences.filter(s => s.trim().length > 0);
-
-    // Debug log: show each sentence with visible line breaks
-    console.log('=== SENTENCE BREAKDOWN ===');
-    filtered.forEach((sentence, index) => {
-      console.log(`[Sentence ${index}]:`, JSON.stringify(sentence));
-      console.log(`  Raw: ${sentence}`);
-      console.log(`  Trimmed: "${sentence.trim()}"`);
-      console.log(`  Has newline: ${sentence.includes('\n')}`);
-      console.log('---');
-    });
-    console.log(`Total sentences: ${filtered.length}`);
-
-    return filtered;
+    return processedSentences.filter(s => s.trim().length > 0);
   };
 
   // Load progress from localStorage
