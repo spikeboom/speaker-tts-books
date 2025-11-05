@@ -100,25 +100,32 @@ export function SentenceHighlight({
             textColor = 'var(--text-muted)';
           }
 
+          // Extract sentence text and trailing newlines separately
+          const trailingNewlines = sentence.match(/\n*$/)?.[0] || '';
+          const sentenceText = sentence.slice(0, sentence.length - trailingNewlines.length);
+
           return (
-            <span
-              key={index}
-              ref={(el) => {
-                sentenceRefs.current[index] = el;
-              }}
-              onClick={() => onSentenceClick?.(index)}
-              className="transition-all duration-300 rounded"
-              style={{
-                whiteSpace: 'pre-wrap',
-                backgroundColor: bgColor,
-                color: textColor,
-                fontWeight: isCurrentSentence || isSavedSentence ? 'bold' : 'normal',
-                boxShadow: shadowColor ? `0 0 0 2px ${shadowColor}` : 'none',
-                cursor: onSentenceClick ? 'pointer' : 'default',
-              }}
-            >
-              {sentence}{' '}
-            </span>
+            <>
+              <span
+                key={index}
+                ref={(el) => {
+                  sentenceRefs.current[index] = el;
+                }}
+                onClick={() => onSentenceClick?.(index)}
+                className="transition-all duration-300 rounded"
+                style={{
+                  whiteSpace: 'pre-wrap',
+                  backgroundColor: bgColor,
+                  color: textColor,
+                  fontWeight: isCurrentSentence || isSavedSentence ? 'bold' : 'normal',
+                  boxShadow: shadowColor ? `0 0 0 2px ${shadowColor}` : 'none',
+                  cursor: onSentenceClick ? 'pointer' : 'default',
+                }}
+              >
+                {sentenceText}{' '}
+              </span>
+              {trailingNewlines}
+            </>
           );
         })}
       </div>
