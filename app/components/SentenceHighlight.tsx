@@ -72,8 +72,9 @@ export function SentenceHighlight({
         backgroundColor: 'var(--card-bg)',
         maxHeight: 'min(500px, calc(100vh - 280px))',
       }}
+      translate="yes"
     >
-      <div className="text-lg leading-relaxed" style={{ whiteSpace: 'pre-wrap', color: 'var(--input-text)' }}>
+      <div className="text-lg leading-relaxed" style={{ whiteSpace: 'pre-wrap', color: 'var(--input-text)' }} translate="yes">
         {sentences.map((sentence, index) => {
           const isCurrentSentence = index === currentSentenceIndex;
           const isSavedSentence = savedSentenceIndex !== undefined && index === savedSentenceIndex && !isPlaying && !isPaused && index !== currentSentenceIndex;
@@ -107,27 +108,27 @@ export function SentenceHighlight({
           const sentenceText = sentence.slice(0, sentence.length - trailingNewlines.length);
 
           return (
-            <>
-              <span
-                key={index}
-                ref={(el) => {
-                  sentenceRefs.current[index] = el;
-                }}
-                onClick={isInteractive ? () => onSentenceClick?.(index) : undefined}
-                className="transition-all duration-300 rounded"
-                style={{
-                  whiteSpace: 'pre-wrap',
-                  backgroundColor: bgColor,
-                  color: textColor,
-                  fontWeight: isCurrentSentence || isSavedSentence ? 'bold' : 'normal',
-                  boxShadow: shadowColor ? `0 0 0 2px ${shadowColor}` : 'none',
-                  cursor: isInteractive && onSentenceClick ? 'pointer' : 'default',
-                }}
-              >
-                {sentenceText}{' '}
-              </span>
-              {trailingNewlines}
-            </>
+            <span
+              key={index}
+              ref={(el) => {
+                sentenceRefs.current[index] = el;
+              }}
+              onClick={isInteractive ? () => onSentenceClick?.(index) : undefined}
+              className="transition-all duration-300 rounded"
+              translate="yes"
+              style={{
+                whiteSpace: 'pre-wrap',
+                backgroundColor: bgColor,
+                color: textColor,
+                fontWeight: isCurrentSentence || isSavedSentence ? 'bold' : 'normal',
+                boxShadow: shadowColor ? `0 0 0 2px ${shadowColor}` : 'none',
+                cursor: isInteractive && onSentenceClick ? 'pointer' : 'default',
+                userSelect: 'text',
+                WebkitUserSelect: 'text',
+              }}
+            >
+              {sentenceText}{' '}{trailingNewlines}
+            </span>
           );
         })}
       </div>
