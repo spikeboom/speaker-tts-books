@@ -32,6 +32,9 @@ export function EpubReader({
   // Toggle between fraction and percentage for chapter progress
   const [showChapterPercentage, setShowChapterPercentage] = useState(false);
 
+  // Interactive mode toggle (for Google Translate compatibility)
+  const [isInteractive, setIsInteractive] = useState(true);
+
   // Auto-save state
   const [lastAutoSave, setLastAutoSave] = useState<{page: number, sentence: number} | null>(null);
   const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
@@ -498,16 +501,32 @@ export function EpubReader({
             )}
 
             {/* TTS Controls */}
-            <div className={`flex items-center gap-1 ${mode === 'text' ? 'flex-1 justify-center' : ''}`}>
+            <div className={`flex items-center gap-2 ${mode === 'text' ? 'flex-1 justify-center' : ''}`}>
               <PlaybackControls
                 isPlaying={isPlaying}
                 isPaused={isPaused}
                 onPlay={handlePlay}
                 onPause={handlePauseWithSave}
-                onStop={handleStopWithSave}
-                onReset={handleReset}
-                showReset={true}
               />
+
+              {/* Interactive mode toggle */}
+              <button
+                onClick={() => setIsInteractive(!isInteractive)}
+                className="px-2.5 py-1 rounded text-xs font-semibold transition-colors"
+                style={{
+                  backgroundColor: isInteractive ? 'var(--blue-light)' : 'var(--gray-300)',
+                  color: 'var(--button-text)',
+                }}
+                onMouseEnter={(e) => {
+                  (e.currentTarget as HTMLElement).style.backgroundColor = isInteractive ? 'var(--blue-dark)' : 'var(--gray-400)';
+                }}
+                onMouseLeave={(e) => {
+                  (e.currentTarget as HTMLElement).style.backgroundColor = isInteractive ? 'var(--blue-light)' : 'var(--gray-300)';
+                }}
+                title={isInteractive ? 'Desativar clique nas frases (para usar Google Translate)' : 'Ativar clique nas frases'}
+              >
+                {isInteractive ? '🖱️' : '🚫'}
+              </button>
             </div>
 
             {mode === 'epub' && (
@@ -590,6 +609,7 @@ export function EpubReader({
                       : undefined
                   }
                   onSentenceClick={setCurrentSentence}
+                  isInteractive={isInteractive}
                 />
               </div>
             </div>

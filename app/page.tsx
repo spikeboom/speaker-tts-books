@@ -359,9 +359,6 @@ export default function Home() {
               isPaused={isPaused}
               onPlay={handlePlay}
               onPause={handlePause}
-              onStop={handleStop}
-              onReset={handleReset}
-              showReset={true}
             />
           </div>
         </div>

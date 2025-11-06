@@ -7,6 +7,7 @@ interface SentenceHighlightProps {
   isPaused: boolean;
   savedSentenceIndex?: number;
   onSentenceClick?: (index: number) => void;
+  isInteractive?: boolean;
 }
 
 export function SentenceHighlight({
@@ -16,6 +17,7 @@ export function SentenceHighlight({
   isPaused,
   savedSentenceIndex,
   onSentenceClick,
+  isInteractive = true,
 }: SentenceHighlightProps) {
   const sentenceRefs = useRef<(HTMLSpanElement | null)[]>([]);
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -111,7 +113,7 @@ export function SentenceHighlight({
                 ref={(el) => {
                   sentenceRefs.current[index] = el;
                 }}
-                onClick={() => onSentenceClick?.(index)}
+                onClick={isInteractive ? () => onSentenceClick?.(index) : undefined}
                 className="transition-all duration-300 rounded"
                 style={{
                   whiteSpace: 'pre-wrap',
@@ -119,7 +121,7 @@ export function SentenceHighlight({
                   color: textColor,
                   fontWeight: isCurrentSentence || isSavedSentence ? 'bold' : 'normal',
                   boxShadow: shadowColor ? `0 0 0 2px ${shadowColor}` : 'none',
-                  cursor: onSentenceClick ? 'pointer' : 'default',
+                  cursor: isInteractive && onSentenceClick ? 'pointer' : 'default',
                 }}
               >
                 {sentenceText}{' '}
