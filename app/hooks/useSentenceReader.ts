@@ -336,13 +336,17 @@ export function useSentenceReader() {
   }, [text, sentences, isPaused, currentSentenceIndex, speakSentence]);
 
   const handlePause = useCallback(() => {
-    if (window.speechSynthesis.speaking || isPlaying) {
-      // Set flag to prevent utterance events from changing state
-      isPausingRef.current = true;
+    // Set flag FIRST to prevent utterance events from changing state
+    isPausingRef.current = true;
 
-      // Cancel completely instead of pausing for more reliable behavior
-      window.speechSynthesis.cancel();
+    // Cancel completely instead of pausing for more reliable behavior
+    window.speechSynthesis.cancel();
 
+    // Detect Android and add extra delay if needed
+    const isAndroid = /Android/i.test(navigator.userAgent);
+    const delay = isAndroid ? 50 : 0;
+
+    setTimeout(() => {
       // Set states after cancel to ensure they persist
       setIsPaused(true);
       setIsPlaying(false);
@@ -350,16 +354,35 @@ export function useSentenceReader() {
       // Reset to beginning of current sentence
       characterPositionRef.current = 0;
       saveProgress();
-    }
-  }, [saveProgress, isPlaying]);
+
+      // Reset flag after state is set
+      isPausingRef.current = false;
+    }, delay);
+  }, [saveProgress]);
 
   const handleStop = useCallback(() => {
+    // Set flag FIRST to prevent utterance events from changing state
+    isPausingRef.current = true;
+
+    // Cancel speech synthesis
     window.speechSynthesis.cancel();
-    setIsPlaying(false);
-    setIsPaused(false);
-    // Reset to beginning of current sentence when stopped
-    characterPositionRef.current = 0;
-    saveProgress();
+
+    // Detect Android and add extra delay if needed
+    const isAndroid = /Android/i.test(navigator.userAgent);
+    const delay = isAndroid ? 50 : 0;
+
+    setTimeout(() => {
+      // Reset all states
+      setIsPlaying(false);
+      setIsPaused(false);
+
+      // Reset to beginning of current sentence when stopped
+      characterPositionRef.current = 0;
+      saveProgress();
+
+      // Reset flag after state is set
+      isPausingRef.current = false;
+    }, delay);
   }, [saveProgress]);
 
   const handleReset = useCallback(() => {
@@ -371,12 +394,41 @@ export function useSentenceReader() {
     localStorage.removeItem('tts-reader-progress');
   }, []);
 
-  // Function to set sentence index (for loading saved position)
+  // Function to set sentence index (for loading saved position or clicking on a sentence)
   const setCurrentSentence = useCallback((index: number) => {
     if (index >= 0 && index < sentences.length) {
+      const wasPlaying = isPlaying;
+
+      // If currently playing, stop it first
+      if (isPlaying || isPaused) {
+        // Set flag to prevent utterance events from interfering
+        isPausingRef.current = true;
+
+        // Cancel any ongoing speech
+        window.speechSynthesis.cancel();
+
+        // Reset states
+        setIsPlaying(false);
+        setIsPaused(false);
+      }
+
+      // Update to new sentence
       setCurrentSentenceIndex(index);
+      characterPositionRef.current = 0;
+
+      // Detect Android and add extra delay if needed
+      const isAndroid = /Android/i.test(navigator.userAgent);
+      const delay = isAndroid ? 100 : 50;
+
+      // If was playing, start playing the new sentence after a delay
+      setTimeout(() => {
+        isPausingRef.current = false;
+        if (wasPlaying) {
+          speakSentence(index);
+        }
+      }, delay);
     }
-  }, [sentences.length]);
+  }, [sentences.length, isPlaying, isPaused, speakSentence]);
 
   // Navigate to previous sentence
   const previousSentence = useCallback(() => {
