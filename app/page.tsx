@@ -163,9 +163,9 @@ export default function Home() {
                   (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--blue-light)';
                 }
               }}
-              title="Salvar e abrir em tela cheia para leitura"
+              title="Salvar e iniciar leitura"
             >
-              📖 Ler em Tela Cheia
+              ▶️ Iniciar
             </button>
           </div>
 

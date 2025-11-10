@@ -77,7 +77,7 @@ export default function EpubsPage() {
                 (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--blue-light)';
               }}
             >
-              ← Voltar para Leitor TTS
+              ← Início
             </Link>
           </div>
         </div>
@@ -122,29 +122,6 @@ export default function EpubsPage() {
             onDelete={handleDelete}
             onRead={handleRead}
           />
-        </div>
-
-        {/* Instructions */}
-        <div
-          className="mt-8 rounded-lg p-4 border-2 transition-colors"
-          style={{
-            backgroundColor: 'var(--blue-bg)',
-            borderColor: 'var(--blue-light)',
-          }}
-        >
-          <h3 className="text-lg font-semibold mb-2 transition-colors" style={{ color: 'var(--foreground)' }}>
-            ℹ️ Instruções
-          </h3>
-          <ul className="text-sm space-y-1 list-disc list-inside transition-colors" style={{ color: 'var(--text-secondary)' }}>
-            <li>Arraste e solte ou clique para selecionar um arquivo EPUB</li>
-            <li>Insira um título descritivo para o livro</li>
-            <li>Clique em "Fazer Upload" para enviar</li>
-            <li>Use "Download" para baixar o livro novamente</li>
-            <li>Tamanho máximo por arquivo: 50MB</li>
-          </ul>
-          <p className="mt-3 text-xs transition-colors" style={{ color: 'var(--text-muted)' }}>
-            💡 Os livros são armazenados com segurança no Supabase Storage
-          </p>
         </div>
       </div>
     </div>
