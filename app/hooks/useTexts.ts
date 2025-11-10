@@ -73,26 +73,28 @@ export function useTexts() {
   }, [fetchTexts]);
 
   // Save a new text
-  const saveText = useCallback(async (title: string, content: string): Promise<boolean> => {
+  const saveText = useCallback(async (title: string, content: string): Promise<string | null> => {
     try {
       setLoading(true);
       setError(null);
 
       const cleanedContent = cleanText(content);
 
-      const { error: insertError } = await supabase
+      const { data, error: insertError } = await supabase
         .from('saved_texts')
-        .insert([{ title, content: cleanedContent }]);
+        .insert([{ title, content: cleanedContent }])
+        .select('id')
+        .single();
 
       if (insertError) throw insertError;
 
       // Refresh the list
       await fetchTexts();
-      return true;
+      return data?.id || null;
     } catch (err) {
       console.error('Error saving text:', err);
       setError(err instanceof Error ? err.message : 'Failed to save text');
-      return false;
+      return null;
     } finally {
       setLoading(false);
     }

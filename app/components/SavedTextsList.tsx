@@ -4,18 +4,14 @@ import Link from 'next/link';
 interface SavedTextsListProps {
   texts: SavedText[];
   loading: boolean;
-  onSelectText: (text: SavedText) => void;
   onDeleteText: (id: string) => void;
-  currentTextId?: string;
   hideTitle?: boolean;
 }
 
 export function SavedTextsList({
   texts,
   loading,
-  onSelectText,
   onDeleteText,
-  currentTextId,
   hideTitle = false,
 }: SavedTextsListProps) {
   const formatDate = (dateString: string) => {
@@ -56,7 +52,7 @@ export function SavedTextsList({
         <div className="text-center py-8 transition-colors" style={{ color: 'var(--text-muted)' }}>
           <p className="text-lg mb-2">Nenhum texto salvo ainda</p>
           <p className="text-sm">
-            Clique no botão "💾 Salvar Texto" para guardar seus textos
+            Digite um texto e clique em "📖 Ler em Tela Cheia" para criar uma leitura
           </p>
         </div>
       </div>
@@ -84,15 +80,13 @@ export function SavedTextsList({
 
       <div className="space-y-3 max-h-[400px] overflow-y-auto">
         {texts.map((text) => {
-          const isSelected = currentTextId === text.id;
-
           return (
             <div
               key={text.id}
               className="border-2 rounded-lg p-4 transition-all"
               style={{
-                borderColor: isSelected ? 'var(--blue-light)' : 'var(--border-color)',
-                backgroundColor: isSelected ? 'var(--blue-bg)' : 'var(--card-bg)',
+                borderColor: 'var(--border-color)',
+                backgroundColor: 'var(--card-bg)',
               }}
             >
               <div className="flex items-start justify-between gap-3">
@@ -126,27 +120,6 @@ export function SavedTextsList({
                   >
                     📖 Abrir
                   </Link>
-
-                  <button
-                    onClick={() => onSelectText(text)}
-                    className="px-4 py-2 rounded-lg font-semibold shadow-sm transition-colors whitespace-nowrap"
-                    style={{
-                      backgroundColor: isSelected ? 'var(--blue-dark)' : 'var(--blue-light)',
-                      color: 'var(--button-text)',
-                    }}
-                    onMouseEnter={(e) => {
-                      if (!isSelected) {
-                        (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--blue-dark)';
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (!isSelected) {
-                        (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--blue-light)';
-                      }
-                    }}
-                  >
-                    {isSelected ? '✓ Selecionado' : '⬇️ Carregar'}
-                  </button>
 
                   <button
                     onClick={() => {
