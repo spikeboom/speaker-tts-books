@@ -48,6 +48,7 @@ export function useEpubReader() {
   const loadProgress = useCallback(async (id: string) => {
     try {
       const { data, error } = await supabase
+        .schema('books')
         .from('epub_reading_progress')
         .select('*')
         .eq('epub_id', id)
@@ -76,7 +77,7 @@ export function useEpubReader() {
 
       // Download EPUB file from Supabase
       const { data, error: downloadError } = await supabase.storage
-        .from('epubs')
+        .from('books-epubs')
         .download(filePath);
 
       if (downloadError) throw downloadError;
@@ -349,6 +350,7 @@ export function useEpubReader() {
       };
 
       const { data, error } = await supabase
+        .schema('books')
         .from('epub_reading_progress')
         .upsert(progressData, {
           onConflict: 'epub_id',

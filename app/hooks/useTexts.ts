@@ -52,6 +52,7 @@ export function useTexts() {
       setError(null);
 
       const { data, error: fetchError } = await supabase
+        .schema('books')
         .from('saved_texts')
         .select('*')
         .order('created_at', { ascending: false });
@@ -81,6 +82,7 @@ export function useTexts() {
       const cleanedContent = cleanText(content);
 
       const { data, error: insertError } = await supabase
+        .schema('books')
         .from('saved_texts')
         .insert([{ title, content: cleanedContent }])
         .select('id')
@@ -109,6 +111,7 @@ export function useTexts() {
       const cleanedContent = cleanText(content);
 
       const { error: updateError } = await supabase
+        .schema('books')
         .from('saved_texts')
         .update({ title, content: cleanedContent, updated_at: new Date().toISOString() })
         .eq('id', id);
@@ -134,6 +137,7 @@ export function useTexts() {
       setError(null);
 
       const { error: deleteError } = await supabase
+        .schema('books')
         .from('saved_texts')
         .delete()
         .eq('id', id);
@@ -159,6 +163,7 @@ export function useTexts() {
       setError(null);
 
       const { error: deleteError } = await supabase
+        .schema('books')
         .from('saved_texts')
         .delete()
         .neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all records

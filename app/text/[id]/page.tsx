@@ -23,6 +23,7 @@ export default function TextPage() {
       try {
         const supabase = createClient();
         const { data, error: fetchError } = await supabase
+          .schema('books')
           .from('saved_texts')
           .select('id, title, content')
           .eq('id', params.id)

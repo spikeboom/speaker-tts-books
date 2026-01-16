@@ -23,6 +23,7 @@ export default function EpubPage() {
       try {
         const supabase = createClient();
         const { data, error: fetchError } = await supabase
+          .schema('books')
           .from('epubs')
           .select('id, title, file_path')
           .eq('id', params.id)

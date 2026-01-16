@@ -28,7 +28,18 @@ export function useSentenceReader() {
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
   const characterPositionRef = useRef(0);
   const isPausingRef = useRef(false);
+  const isPlayingRef = useRef(false);
+  const isPausedRef = useRef(false);
   const supabase = createClient();
+
+  // Keep refs in sync with state
+  useEffect(() => {
+    isPlayingRef.current = isPlaying;
+  }, [isPlaying]);
+
+  useEffect(() => {
+    isPausedRef.current = isPaused;
+  }, [isPaused]);
 
   // Split text into sentences
   const splitIntoSentences = (inputText: string): string[] => {
@@ -100,6 +111,7 @@ export function useSentenceReader() {
   const loadPreferences = useCallback(async () => {
     try {
       const { data, error } = await supabase
+        .schema('books')
         .from('user_preferences')
         .select('*')
         .order('updated_at', { ascending: false })
@@ -128,6 +140,7 @@ export function useSentenceReader() {
     try {
       // Check if preferences exist
       const { data: existing, error: fetchError } = await supabase
+        .schema('books')
         .from('user_preferences')
         .select('id')
         .order('updated_at', { ascending: false })
@@ -145,6 +158,7 @@ export function useSentenceReader() {
       if (existing && !fetchError) {
         // Update existing preferences
         await supabase
+          .schema('books')
           .from('user_preferences')
           .update(updateData)
           .eq('id', existing.id)
@@ -152,6 +166,7 @@ export function useSentenceReader() {
       } else {
         // Create new preferences
         await supabase
+          .schema('books')
           .from('user_preferences')
           .insert([updateData])
           .select();
@@ -219,7 +234,12 @@ export function useSentenceReader() {
 
   // Speak current sentence
   const speakSentence = useCallback((index: number) => {
+    console.log('[TTS] speakSentence called with index:', index);
+    console.log('[TTS] sentences.length:', sentences.length);
+    console.log('[TTS] isPausingRef.current:', isPausingRef.current);
+
     if (index >= sentences.length || index < 0) {
+      console.log('[TTS] Index out of bounds, stopping');
       setIsPlaying(false);
       setIsPaused(false);
       return;
@@ -227,16 +247,23 @@ export function useSentenceReader() {
 
     // Detect Android
     const isAndroid = /Android/i.test(navigator.userAgent);
+    console.log('[TTS] isAndroid:', isAndroid);
 
     // Always cancel before speaking to clear any cache
+    console.log('[TTS] Canceling previous speech...');
     window.speechSynthesis.cancel();
 
     // Add small delay on Android to ensure cancel completes
     const delay = isAndroid ? 100 : 0;
+    console.log('[TTS] Delay before speaking:', delay);
 
     setTimeout(() => {
+      console.log('[TTS] Inside setTimeout, creating utterance for:', sentences[index]?.substring(0, 50) + '...');
       const utterance = new SpeechSynthesisUtterance(sentences[index]);
       const voice = voices.find(v => v.name === selectedVoice);
+      console.log('[TTS] Selected voice name:', selectedVoice);
+      console.log('[TTS] Found voice:', voice?.name, voice?.lang);
+      console.log('[TTS] Available voices:', voices.length);
 
       if (voice) {
         // Android uses underscore (en_US) but BCP 47 standard uses dash (en-US)
@@ -258,8 +285,10 @@ export function useSentenceReader() {
       utterance.rate = rate;
       utterance.pitch = pitch;
       utterance.volume = volume;
+      console.log('[TTS] Utterance settings - rate:', rate, 'pitch:', pitch, 'volume:', volume);
 
       utterance.onstart = () => {
+        console.log('[TTS] onstart fired, isPausingRef:', isPausingRef.current);
         if (isPausingRef.current) return;
         setIsPlaying(true);
         setIsPaused(false);
@@ -273,6 +302,7 @@ export function useSentenceReader() {
       };
 
       utterance.onend = () => {
+        console.log('[TTS] onend fired, isPausingRef:', isPausingRef.current);
         if (isPausingRef.current) {
           isPausingRef.current = false;
           return;
@@ -296,22 +326,39 @@ export function useSentenceReader() {
         }
       };
 
-      utterance.onerror = (event) => {
+      utterance.onerror = (event: SpeechSynthesisErrorEvent) => {
+        console.log('[TTS] onerror fired, error:', event.error, 'isPausingRef:', isPausingRef.current);
         if (isPausingRef.current) {
           isPausingRef.current = false;
           return;
         }
-        console.error('Speech synthesis error:', event);
+        // Ignore 'interrupted' and 'canceled' errors - they happen when we cancel speech intentionally
+        if (event.error === 'interrupted' || event.error === 'canceled') {
+          return;
+        }
+        console.error('Speech synthesis error:', event.error);
         setIsPlaying(false);
         setIsPaused(false);
       };
 
       utteranceRef.current = utterance;
+      console.log('[TTS] Calling speechSynthesis.speak()...');
+      console.log('[TTS] speechSynthesis.speaking:', window.speechSynthesis.speaking);
+      console.log('[TTS] speechSynthesis.paused:', window.speechSynthesis.paused);
+      console.log('[TTS] speechSynthesis.pending:', window.speechSynthesis.pending);
       window.speechSynthesis.speak(utterance);
+      console.log('[TTS] speak() called, now speaking:', window.speechSynthesis.speaking);
     }, delay);
   }, [sentences, voices, selectedVoice, rate, pitch, volume, saveProgress]);
 
   const handlePlay = useCallback(() => {
+    console.log('[TTS] handlePlay called');
+    console.log('[TTS] text length:', text.length);
+    console.log('[TTS] sentences.length:', sentences.length);
+    console.log('[TTS] isPaused:', isPaused);
+    console.log('[TTS] isPlaying:', isPlaying);
+    console.log('[TTS] currentSentenceIndex:', currentSentenceIndex);
+
     if (!text.trim()) {
       alert('Por favor, digite algum texto para ler.');
       return;
@@ -323,6 +370,7 @@ export function useSentenceReader() {
     }
 
     if (isPaused) {
+      console.log('[TTS] Resuming from pause...');
       // When resuming from pause, always start from beginning of current sentence
       isPausingRef.current = false; // Clear the pausing flag
       setIsPaused(false);
@@ -331,9 +379,10 @@ export function useSentenceReader() {
     }
 
     // Start or restart from current sentence
+    console.log('[TTS] Starting fresh playback...');
     isPausingRef.current = false; // Clear the pausing flag
     speakSentence(currentSentenceIndex);
-  }, [text, sentences, isPaused, currentSentenceIndex, speakSentence]);
+  }, [text, sentences, isPaused, isPlaying, currentSentenceIndex, speakSentence]);
 
   const handlePause = useCallback(() => {
     // Set flag FIRST to prevent utterance events from changing state
@@ -395,12 +444,18 @@ export function useSentenceReader() {
   }, []);
 
   // Function to set sentence index (for loading saved position or clicking on a sentence)
-  const setCurrentSentence = useCallback((index: number) => {
-    if (index >= 0 && index < sentences.length) {
-      const wasPlaying = isPlaying;
+  const setCurrentSentence = useCallback((index: number, autoPlay: boolean = false) => {
+    console.log('[TTS] setCurrentSentence called, index:', index, 'autoPlay:', autoPlay);
+    console.log('[TTS] Stack trace:', new Error().stack);
+    console.log('[TTS] sentences.length:', sentences.length);
+    console.log('[TTS] isPlayingRef:', isPlayingRef.current, 'isPausedRef:', isPausedRef.current);
 
-      // If currently playing, stop it first
-      if (isPlaying || isPaused) {
+    if (index >= 0 && index < sentences.length) {
+      const wasPlaying = isPlayingRef.current;
+      console.log('[TTS] wasPlaying:', wasPlaying);
+
+      // If currently playing or paused, stop it first
+      if (isPlayingRef.current || isPausedRef.current) {
         // Set flag to prevent utterance events from interfering
         isPausingRef.current = true;
 
@@ -420,15 +475,22 @@ export function useSentenceReader() {
       const isAndroid = /Android/i.test(navigator.userAgent);
       const delay = isAndroid ? 100 : 50;
 
-      // If was playing, start playing the new sentence after a delay
-      setTimeout(() => {
-        isPausingRef.current = false;
-        if (wasPlaying) {
+      // Start playing if autoPlay is true or if was already playing
+      const shouldPlay = autoPlay || wasPlaying;
+      console.log('[TTS] shouldPlay:', shouldPlay);
+      if (shouldPlay) {
+        console.log('[TTS] Will call speakSentence after delay:', delay);
+        setTimeout(() => {
+          console.log('[TTS] setTimeout fired, calling speakSentence');
+          isPausingRef.current = false;
           speakSentence(index);
-        }
-      }, delay);
+        }, delay);
+      } else {
+        console.log('[TTS] Not playing, just updating index');
+        isPausingRef.current = false;
+      }
     }
-  }, [sentences.length, isPlaying, isPaused, speakSentence]);
+  }, [sentences.length, speakSentence]);
 
   // Navigate to previous sentence
   const previousSentence = useCallback(() => {

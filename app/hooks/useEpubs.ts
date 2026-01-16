@@ -24,6 +24,7 @@ export function useEpubs() {
       setError(null);
 
       const { data, error: fetchError } = await supabase
+        .schema('books')
         .from('epubs')
         .select('*')
         .order('uploaded_at', { ascending: false });
@@ -70,7 +71,7 @@ export function useEpubs() {
       // Upload to Supabase Storage
       setUploadProgress(30);
       const { error: uploadError } = await supabase.storage
-        .from('epubs')
+        .from('books-epubs')
         .upload(filePath, file, {
           cacheControl: '3600',
           upsert: false,
@@ -82,6 +83,7 @@ export function useEpubs() {
 
       // Save metadata to database
       const { error: insertError } = await supabase
+        .schema('books')
         .from('epubs')
         .insert([{
           title,
@@ -92,7 +94,7 @@ export function useEpubs() {
 
       if (insertError) {
         // If database insert fails, delete the uploaded file
-        await supabase.storage.from('epubs').remove([filePath]);
+        await supabase.storage.from('books-epubs').remove([filePath]);
         throw insertError;
       }
 
@@ -117,7 +119,7 @@ export function useEpubs() {
       setError(null);
 
       const { data, error: downloadError } = await supabase.storage
-        .from('epubs')
+        .from('books-epubs')
         .download(epub.file_path);
 
       if (downloadError) throw downloadError;
@@ -145,13 +147,14 @@ export function useEpubs() {
 
       // Delete from storage
       const { error: storageError } = await supabase.storage
-        .from('epubs')
+        .from('books-epubs')
         .remove([filePath]);
 
       if (storageError) throw storageError;
 
       // Delete from database
       const { error: deleteError } = await supabase
+        .schema('books')
         .from('epubs')
         .delete()
         .eq('id', id);

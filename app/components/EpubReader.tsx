@@ -121,29 +121,46 @@ export function EpubReader({
   useEffect(() => {
     if (mode === 'epub' && currentPageContent) {
       setText(currentPageContent);
+      // Reset loaded sentence ref when page changes
+      loadedSavedSentenceRef.current = null;
       if (currentPage > 0) {
         handleStop(); // Stop playback when changing pages (but not on initial load)
       }
     }
   }, [mode, currentPageContent, currentPage, totalPages, setText, handleStop]);
 
-  // Load saved sentence position when progress is loaded
+  // Track if we've already loaded the saved sentence position for this page
+  const loadedSavedSentenceRef = useRef<number | null>(null);
+  const setCurrentSentenceRef = useRef(setCurrentSentence);
+
+  // Keep the ref updated
+  useEffect(() => {
+    setCurrentSentenceRef.current = setCurrentSentence;
+  }, [setCurrentSentence]);
+
+  // Load saved sentence position when progress is loaded (only once per page)
   useEffect(() => {
     if (
       savedProgress &&
       savedProgress.current_page === currentPage &&
       sentences.length > 0
     ) {
+      // Check if we already loaded for this page
+      if (loadedSavedSentenceRef.current === currentPage) {
+        return; // Already loaded for this page, skip
+      }
+
       // Set the current sentence to the saved position
       const sentenceIndex = Math.min(
         savedProgress.current_sentence,
         sentences.length - 1
       );
       if (sentenceIndex >= 0) {
-        setCurrentSentence(sentenceIndex);
+        loadedSavedSentenceRef.current = currentPage;
+        setCurrentSentenceRef.current(sentenceIndex, false); // Don't autoplay when loading saved position
       }
     }
-  }, [savedProgress, currentPage, sentences.length, setCurrentSentence]);
+  }, [savedProgress, currentPage, sentences.length]);
 
   // Auto-save with 10 second debounce when sentence changes
   useEffect(() => {
@@ -608,7 +625,7 @@ export function EpubReader({
                       ? savedProgress.current_sentence
                       : undefined
                   }
-                  onSentenceClick={setCurrentSentence}
+                  onSentenceClick={(index) => setCurrentSentence(index, true)}
                   isInteractive={isInteractive}
                 />
               </div>
