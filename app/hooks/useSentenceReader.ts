@@ -21,6 +21,7 @@ export function useSentenceReader() {
   const [text, setText] = useState('');
   const [sentences, setSentences] = useState<string[]>([]);
   const [currentSentenceIndex, setCurrentSentenceIndex] = useState(0);
+  const [spokenSentenceIndex, setSpokenSentenceIndex] = useState(0); // Only updates when speech starts
   const [isPlaying, setIsPlaying] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
@@ -321,6 +322,7 @@ export function useSentenceReader() {
         setIsPlaying(true);
         setIsPaused(false);
         setCurrentSentenceIndex(index);
+        setSpokenSentenceIndex(index); // Update spoken sentence when speech actually starts
         characterPositionRef.current = 0;
       };
 
@@ -596,6 +598,7 @@ export function useSentenceReader() {
     setText,
     sentences,
     currentSentenceIndex,
+    spokenSentenceIndex,
     isPlaying,
     isPaused,
     voices,

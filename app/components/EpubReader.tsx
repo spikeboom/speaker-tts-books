@@ -67,6 +67,7 @@ export function EpubReader({
     setText,
     sentences,
     currentSentenceIndex,
+    spokenSentenceIndex,
     isPlaying,
     isPaused,
     voices,
@@ -345,12 +346,12 @@ export function EpubReader({
 
   return (
     <div
-      className="fixed inset-0 z-50 transition-colors"
+      className="min-h-screen transition-colors"
       style={{ backgroundColor: "rgba(0, 0, 0, 0.95)" }}
     >
-      <div className="h-screen flex items-center justify-center p-2 md:p-4">
+      <div className="min-h-screen flex items-start justify-center p-2 md:p-4">
         <div
-          className="rounded-lg shadow-2xl w-full max-w-5xl h-full flex flex-col transition-colors"
+          className="rounded-lg shadow-2xl w-full max-w-5xl flex flex-col transition-colors"
           style={{ backgroundColor: "var(--card-bg)" }}
         >
           {/* Header */}
@@ -658,7 +659,7 @@ export function EpubReader({
                 onMeditationPauseChange={setMeditationPause}
                 youtubeUrl={youtubeUrl}
                 onYoutubeUrlChange={setYoutubeUrl}
-                currentSentence={sentences[currentSentenceIndex]}
+                currentSentence={sentences[spokenSentenceIndex]}
               />
             </div>
           </div>
