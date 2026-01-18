@@ -78,6 +78,7 @@ CREATE TABLE IF NOT EXISTS user_preferences (
   selected_voice TEXT,
   meditation_mode BOOLEAN NOT NULL DEFAULT false,
   meditation_pause DECIMAL(4, 1) NOT NULL DEFAULT 2.0,
+  youtube_url TEXT DEFAULT '',
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );

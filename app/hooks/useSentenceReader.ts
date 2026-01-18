@@ -14,6 +14,7 @@ interface PreferencesData {
   selectedVoice: string;
   meditationMode: boolean;
   meditationPause: number;
+  youtubeUrl: string;
 }
 
 export function useSentenceReader() {
@@ -29,6 +30,7 @@ export function useSentenceReader() {
   const [volume, setVolume] = useState(1);
   const [meditationMode, setMeditationMode] = useState(false);
   const [meditationPause, setMeditationPause] = useState(2.0);
+  const [youtubeUrl, setYoutubeUrl] = useState('');
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
   const characterPositionRef = useRef(0);
   const isPausingRef = useRef(false);
@@ -149,6 +151,9 @@ export function useSentenceReader() {
         if (typeof data.meditation_pause === 'number') {
           setMeditationPause(data.meditation_pause);
         }
+        if (data.youtube_url) {
+          setYoutubeUrl(data.youtube_url);
+        }
       }
     } catch (err) {
       console.error('Error loading preferences:', err);
@@ -174,6 +179,7 @@ export function useSentenceReader() {
         selected_voice: preferences.selectedVoice ?? selectedVoice,
         meditation_mode: preferences.meditationMode ?? meditationMode,
         meditation_pause: preferences.meditationPause ?? meditationPause,
+        youtube_url: preferences.youtubeUrl ?? youtubeUrl,
         updated_at: new Date().toISOString(),
       };
 
@@ -196,7 +202,7 @@ export function useSentenceReader() {
     } catch (error) {
       console.error('Error saving preferences:', error);
     }
-  }, [supabase, rate, pitch, volume, selectedVoice, meditationMode, meditationPause]);
+  }, [supabase, rate, pitch, volume, selectedVoice, meditationMode, meditationPause, youtubeUrl]);
 
   // Load preferences on mount
   useEffect(() => {
@@ -580,6 +586,11 @@ export function useSentenceReader() {
     savePreferences({ meditationPause: pauseSeconds });
   }, [savePreferences]);
 
+  const handleSetYoutubeUrl = useCallback((url: string) => {
+    setYoutubeUrl(url);
+    savePreferences({ youtubeUrl: url });
+  }, [savePreferences]);
+
   return {
     text,
     setText,
@@ -607,5 +618,7 @@ export function useSentenceReader() {
     setMeditationMode: handleSetMeditationMode,
     meditationPause,
     setMeditationPause: handleSetMeditationPause,
+    youtubeUrl,
+    setYoutubeUrl: handleSetYoutubeUrl,
   };
 }

@@ -89,6 +89,8 @@ export function EpubReader({
     setMeditationMode,
     meditationPause,
     setMeditationPause,
+    youtubeUrl,
+    setYoutubeUrl,
   } = useSentenceReader();
 
   // Silent auto-save function
@@ -654,6 +656,9 @@ export function EpubReader({
                 onMeditationModeChange={setMeditationMode}
                 meditationPause={meditationPause}
                 onMeditationPauseChange={setMeditationPause}
+                youtubeUrl={youtubeUrl}
+                onYoutubeUrlChange={setYoutubeUrl}
+                currentSentence={sentences[currentSentenceIndex]}
               />
             </div>
           </div>
