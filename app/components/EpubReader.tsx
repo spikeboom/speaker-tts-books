@@ -660,6 +660,11 @@ export function EpubReader({
                 youtubeUrl={youtubeUrl}
                 onYoutubeUrlChange={setYoutubeUrl}
                 currentSentence={sentences[spokenSentenceIndex]}
+                isPlaying={isPlaying}
+                onPlay={handlePlay}
+                onPause={handlePause}
+                onPreviousSentence={previousSentence}
+                onNextSentence={nextSentence}
               />
             </div>
           </div>

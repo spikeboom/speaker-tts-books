@@ -19,6 +19,11 @@ interface VoiceSettingsProps {
   youtubeUrl: string;
   onYoutubeUrlChange: (url: string) => void;
   currentSentence?: string;
+  isPlaying?: boolean;
+  onPlay?: () => void;
+  onPause?: () => void;
+  onPreviousSentence?: () => void;
+  onNextSentence?: () => void;
 }
 
 function extractYoutubeId(url: string): string | null {
@@ -51,11 +56,43 @@ export function VoiceSettings({
   youtubeUrl,
   onYoutubeUrlChange,
   currentSentence,
+  isPlaying,
+  onPlay,
+  onPause,
+  onPreviousSentence,
+  onNextSentence,
 }: VoiceSettingsProps) {
   const isAndroid = typeof navigator !== 'undefined' && /Android/i.test(navigator.userAgent);
   const youtubeId = extractYoutubeId(youtubeUrl);
   const videoContainerRef = useRef<HTMLDivElement>(null);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
+
+  // Control YouTube player
+  const controlYoutube = useCallback((action: 'play' | 'pause') => {
+    if (iframeRef.current?.contentWindow) {
+      const command = action === 'play' ? 'playVideo' : 'pauseVideo';
+      iframeRef.current.contentWindow.postMessage(
+        JSON.stringify({ event: 'command', func: command }),
+        '*'
+      );
+    }
+  }, []);
+
+  // Sync YouTube with TTS play state
+  useEffect(() => {
+    if (youtubeId) {
+      controlYoutube(isPlaying ? 'play' : 'pause');
+    }
+  }, [isPlaying, youtubeId, controlYoutube]);
+
+  const handlePlayPause = useCallback(() => {
+    if (isPlaying) {
+      onPause?.();
+    } else {
+      onPlay?.();
+    }
+  }, [isPlaying, onPlay, onPause]);
 
   const toggleFullscreen = useCallback(() => {
     if (!videoContainerRef.current) return;
@@ -245,7 +282,8 @@ export function VoiceSettings({
                 }}
               >
                 <iframe
-                  src={`https://www.youtube.com/embed/${youtubeId}?autoplay=0&loop=1&playlist=${youtubeId}`}
+                  ref={iframeRef}
+                  src={`https://www.youtube.com/embed/${youtubeId}?autoplay=0&loop=1&playlist=${youtubeId}&enablejsapi=1`}
                   title="YouTube video"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                   className={`${isFullscreen ? 'w-full h-full' : 'absolute top-0 left-0 w-full h-full rounded'}`}
@@ -254,23 +292,64 @@ export function VoiceSettings({
                 {/* Sentence overlay - centered */}
                 {currentSentence && (
                   <div
-                    className="absolute inset-0 flex items-center justify-center p-4"
+                    className="absolute inset-0 flex items-center justify-center p-2"
                     style={{ pointerEvents: 'none' }}
                   >
                     <p
-                      className={`text-white font-medium text-center max-w-4xl ${isFullscreen ? 'text-2xl md:text-4xl' : 'text-sm md:text-base'}`}
+                      className={`text-white font-medium text-center max-w-4xl ${isFullscreen ? 'text-lg md:text-2xl lg:text-4xl' : 'text-xs md:text-sm'}`}
                       style={{
-                        textShadow: '2px 2px 8px rgba(0,0,0,0.9), 0 0 20px rgba(0,0,0,0.8)',
-                        lineHeight: 1.5,
+                        textShadow: '1px 1px 4px rgba(0,0,0,0.9)',
+                        lineHeight: 1.4,
                         backgroundColor: 'rgba(0,0,0,0.5)',
-                        padding: isFullscreen ? '1.5rem 2rem' : '0.5rem 1rem',
-                        borderRadius: '0.5rem',
+                        padding: isFullscreen ? '1rem 1.5rem' : '0.25rem 0.5rem',
+                        borderRadius: '0.25rem',
                       }}
                     >
                       {currentSentence}
                     </p>
                   </div>
                 )}
+                {/* Playback controls overlay */}
+                <div
+                  className={`absolute left-1/2 transform -translate-x-1/2 flex items-center ${isFullscreen ? 'bottom-8 gap-4' : 'bottom-2 gap-1'}`}
+                >
+                  {/* Previous sentence */}
+                  <button
+                    onClick={onPreviousSentence}
+                    className={`rounded-full bg-black/60 hover:bg-black/80 transition-colors text-white ${isFullscreen ? 'p-3' : 'p-1.5'}`}
+                    title="Frase anterior"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width={isFullscreen ? 28 : 16} height={isFullscreen ? 28 : 16} viewBox="0 0 24 24" fill="white">
+                      <path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/>
+                    </svg>
+                  </button>
+                  {/* Play/Pause */}
+                  <button
+                    onClick={handlePlayPause}
+                    className={`rounded-full bg-white/90 hover:bg-white transition-colors text-black ${isFullscreen ? 'p-4' : 'p-2'}`}
+                    title={isPlaying ? 'Pausar' : 'Reproduzir'}
+                  >
+                    {isPlaying ? (
+                      <svg xmlns="http://www.w3.org/2000/svg" width={isFullscreen ? 32 : 18} height={isFullscreen ? 32 : 18} viewBox="0 0 24 24" fill="black">
+                        <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
+                      </svg>
+                    ) : (
+                      <svg xmlns="http://www.w3.org/2000/svg" width={isFullscreen ? 32 : 18} height={isFullscreen ? 32 : 18} viewBox="0 0 24 24" fill="black">
+                        <path d="M8 5v14l11-7z"/>
+                      </svg>
+                    )}
+                  </button>
+                  {/* Next sentence */}
+                  <button
+                    onClick={onNextSentence}
+                    className={`rounded-full bg-black/60 hover:bg-black/80 transition-colors text-white ${isFullscreen ? 'p-3' : 'p-1.5'}`}
+                    title="Próxima frase"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width={isFullscreen ? 28 : 16} height={isFullscreen ? 28 : 16} viewBox="0 0 24 24" fill="white">
+                      <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/>
+                    </svg>
+                  </button>
+                </div>
                 {/* Fullscreen button */}
                 <button
                   onClick={toggleFullscreen}
