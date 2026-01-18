@@ -12,6 +12,8 @@ interface PreferencesData {
   pitch: number;
   volume: number;
   selectedVoice: string;
+  meditationMode: boolean;
+  meditationPause: number;
 }
 
 export function useSentenceReader() {
@@ -25,11 +27,15 @@ export function useSentenceReader() {
   const [rate, setRate] = useState(1);
   const [pitch, setPitch] = useState(1);
   const [volume, setVolume] = useState(1);
+  const [meditationMode, setMeditationMode] = useState(false);
+  const [meditationPause, setMeditationPause] = useState(2.0);
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
   const characterPositionRef = useRef(0);
   const isPausingRef = useRef(false);
   const isPlayingRef = useRef(false);
   const isPausedRef = useRef(false);
+  const meditationModeRef = useRef(false);
+  const meditationPauseRef = useRef(2.0);
   const supabase = createClient();
 
   // Keep refs in sync with state
@@ -40,6 +46,14 @@ export function useSentenceReader() {
   useEffect(() => {
     isPausedRef.current = isPaused;
   }, [isPaused]);
+
+  useEffect(() => {
+    meditationModeRef.current = meditationMode;
+  }, [meditationMode]);
+
+  useEffect(() => {
+    meditationPauseRef.current = meditationPause;
+  }, [meditationPause]);
 
   // Split text into sentences
   const splitIntoSentences = (inputText: string): string[] => {
@@ -129,6 +143,12 @@ export function useSentenceReader() {
         if (data.selected_voice) {
           setSelectedVoice(data.selected_voice);
         }
+        if (typeof data.meditation_mode === 'boolean') {
+          setMeditationMode(data.meditation_mode);
+        }
+        if (typeof data.meditation_pause === 'number') {
+          setMeditationPause(data.meditation_pause);
+        }
       }
     } catch (err) {
       console.error('Error loading preferences:', err);
@@ -152,6 +172,8 @@ export function useSentenceReader() {
         pitch: preferences.pitch ?? pitch,
         volume: preferences.volume ?? volume,
         selected_voice: preferences.selectedVoice ?? selectedVoice,
+        meditation_mode: preferences.meditationMode ?? meditationMode,
+        meditation_pause: preferences.meditationPause ?? meditationPause,
         updated_at: new Date().toISOString(),
       };
 
@@ -174,7 +196,7 @@ export function useSentenceReader() {
     } catch (error) {
       console.error('Error saving preferences:', error);
     }
-  }, [supabase, rate, pitch, volume, selectedVoice]);
+  }, [supabase, rate, pitch, volume, selectedVoice, meditationMode, meditationPause]);
 
   // Load preferences on mount
   useEffect(() => {
@@ -313,10 +335,13 @@ export function useSentenceReader() {
           setCurrentSentenceIndex(nextIndex);
           characterPositionRef.current = 0;
           saveProgress();
-          // Add small delay to let browser finish processing previous utterance
+          // Calculate delay: meditation mode adds extra pause in seconds (converted to ms)
+          const baseDelay = 100;
+          const meditationDelay = meditationModeRef.current ? meditationPauseRef.current * 1000 : 0;
+          const totalDelay = baseDelay + meditationDelay;
           setTimeout(() => {
             speakSentence(nextIndex);
-          }, 100);
+          }, totalDelay);
         } else {
           setIsPlaying(false);
           setIsPaused(false);
@@ -545,6 +570,16 @@ export function useSentenceReader() {
     savePreferences({ selectedVoice: voiceName });
   }, [savePreferences]);
 
+  const handleSetMeditationMode = useCallback((enabled: boolean) => {
+    setMeditationMode(enabled);
+    savePreferences({ meditationMode: enabled });
+  }, [savePreferences]);
+
+  const handleSetMeditationPause = useCallback((pauseSeconds: number) => {
+    setMeditationPause(pauseSeconds);
+    savePreferences({ meditationPause: pauseSeconds });
+  }, [savePreferences]);
+
   return {
     text,
     setText,
@@ -568,5 +603,9 @@ export function useSentenceReader() {
     setCurrentSentence,
     previousSentence,
     nextSentence,
+    meditationMode,
+    setMeditationMode: handleSetMeditationMode,
+    meditationPause,
+    setMeditationPause: handleSetMeditationPause,
   };
 }

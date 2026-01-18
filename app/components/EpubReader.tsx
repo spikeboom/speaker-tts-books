@@ -85,6 +85,10 @@ export function EpubReader({
     setCurrentSentence,
     previousSentence,
     nextSentence,
+    meditationMode,
+    setMeditationMode,
+    meditationPause,
+    setMeditationPause,
   } = useSentenceReader();
 
   // Silent auto-save function
@@ -646,6 +650,10 @@ export function EpubReader({
                 onPitchChange={setPitch}
                 volume={volume}
                 onVolumeChange={setVolume}
+                meditationMode={meditationMode}
+                onMeditationModeChange={setMeditationMode}
+                meditationPause={meditationPause}
+                onMeditationPauseChange={setMeditationPause}
               />
             </div>
           </div>

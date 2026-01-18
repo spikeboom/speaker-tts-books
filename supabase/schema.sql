@@ -76,6 +76,8 @@ CREATE TABLE IF NOT EXISTS user_preferences (
   pitch DECIMAL(3, 1) NOT NULL DEFAULT 1.0,
   volume DECIMAL(3, 1) NOT NULL DEFAULT 1.0,
   selected_voice TEXT,
+  meditation_mode BOOLEAN NOT NULL DEFAULT false,
+  meditation_pause DECIMAL(4, 1) NOT NULL DEFAULT 2.0,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
