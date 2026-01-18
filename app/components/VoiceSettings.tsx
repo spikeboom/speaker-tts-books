@@ -154,7 +154,7 @@ export function VoiceSettings({
               <input
                 type="range"
                 min="0.5"
-                max="10"
+                max="30"
                 step="0.5"
                 value={meditationPause}
                 onChange={(e) => onMeditationPauseChange(parseFloat(e.target.value))}
