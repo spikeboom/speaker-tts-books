@@ -24,6 +24,8 @@ interface VoiceSettingsProps {
   onPause?: () => void;
   onPreviousSentence?: () => void;
   onNextSentence?: () => void;
+  currentSentenceIndex?: number;
+  totalSentences?: number;
 }
 
 function extractYoutubeId(url: string): string | null {
@@ -61,6 +63,8 @@ export function VoiceSettings({
   onPause,
   onPreviousSentence,
   onNextSentence,
+  currentSentenceIndex = 0,
+  totalSentences = 0,
 }: VoiceSettingsProps) {
   const isAndroid = typeof navigator !== 'undefined' && /Android/i.test(navigator.userAgent);
   const youtubeId = extractYoutubeId(youtubeUrl);
@@ -366,9 +370,47 @@ export function VoiceSettings({
                     </svg>
                   )}
                 </button>
+                {/* Progress indicator */}
+                {totalSentences > 0 && (
+                  <div className={`absolute ${isFullscreen ? 'top-4 left-4' : 'top-2 left-2'}`}>
+                    <div className="relative">
+                      <svg
+                        className={`transform -rotate-90 ${isFullscreen ? 'w-14 h-14' : 'w-10 h-10'}`}
+                        viewBox="0 0 36 36"
+                      >
+                        {/* Background circle */}
+                        <circle
+                          cx="18"
+                          cy="18"
+                          r="15.5"
+                          fill="rgba(0,0,0,0.5)"
+                          stroke="rgba(255,255,255,0.2)"
+                          strokeWidth="3"
+                        />
+                        {/* Progress circle */}
+                        <circle
+                          cx="18"
+                          cy="18"
+                          r="15.5"
+                          fill="none"
+                          stroke="white"
+                          strokeWidth="3"
+                          strokeLinecap="round"
+                          strokeDasharray={`${((currentSentenceIndex + 1) / totalSentences) * 97.5} 97.5`}
+                        />
+                      </svg>
+                      {/* Text in center */}
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <span className={`text-white font-bold ${isFullscreen ? 'text-xs' : 'text-[8px]'}`}>
+                          {currentSentenceIndex + 1}/{totalSentences}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
                 {/* Exit fullscreen hint */}
                 {isFullscreen && (
-                  <div className="absolute top-2 left-2 text-white/50 text-xs">
+                  <div className="absolute top-4 left-20 text-white/50 text-xs">
                     ESC para sair
                   </div>
                 )}
