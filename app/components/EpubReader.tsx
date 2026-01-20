@@ -92,6 +92,14 @@ export function EpubReader({
     setMeditationPause,
     youtubeUrl,
     setYoutubeUrl,
+    noiseYoutubeUrl,
+    setNoiseYoutubeUrl,
+    musicYoutubeUrl,
+    setMusicYoutubeUrl,
+    noiseVolume,
+    setNoiseVolume,
+    musicVolume,
+    setMusicVolume,
   } = useSentenceReader();
 
   // Silent auto-save function
@@ -659,6 +667,14 @@ export function EpubReader({
                 onMeditationPauseChange={setMeditationPause}
                 youtubeUrl={youtubeUrl}
                 onYoutubeUrlChange={setYoutubeUrl}
+                noiseYoutubeUrl={noiseYoutubeUrl}
+                onNoiseYoutubeUrlChange={setNoiseYoutubeUrl}
+                musicYoutubeUrl={musicYoutubeUrl}
+                onMusicYoutubeUrlChange={setMusicYoutubeUrl}
+                noiseVolume={noiseVolume}
+                onNoiseVolumeChange={setNoiseVolume}
+                musicVolume={musicVolume}
+                onMusicVolumeChange={setMusicVolume}
                 currentSentence={sentences[spokenSentenceIndex]}
                 isPlaying={isPlaying}
                 onPlay={handlePlay}

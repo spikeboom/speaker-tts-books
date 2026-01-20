@@ -18,6 +18,14 @@ interface VoiceSettingsProps {
   onMeditationPauseChange: (pause: number) => void;
   youtubeUrl: string;
   onYoutubeUrlChange: (url: string) => void;
+  noiseYoutubeUrl: string;
+  onNoiseYoutubeUrlChange: (url: string) => void;
+  musicYoutubeUrl: string;
+  onMusicYoutubeUrlChange: (url: string) => void;
+  noiseVolume: number;
+  onNoiseVolumeChange: (volume: number) => void;
+  musicVolume: number;
+  onMusicVolumeChange: (volume: number) => void;
   currentSentence?: string;
   isPlaying?: boolean;
   onPlay?: () => void;
@@ -57,6 +65,14 @@ export function VoiceSettings({
   onMeditationPauseChange,
   youtubeUrl,
   onYoutubeUrlChange,
+  noiseYoutubeUrl,
+  onNoiseYoutubeUrlChange,
+  musicYoutubeUrl,
+  onMusicYoutubeUrlChange,
+  noiseVolume,
+  onNoiseVolumeChange,
+  musicVolume,
+  onMusicVolumeChange,
   currentSentence,
   isPlaying,
   onPlay,
@@ -68,125 +84,57 @@ export function VoiceSettings({
 }: VoiceSettingsProps) {
   const isAndroid = typeof navigator !== 'undefined' && /Android/i.test(navigator.userAgent);
   const youtubeId = extractYoutubeId(youtubeUrl);
+  const noiseYoutubeId = extractYoutubeId(noiseYoutubeUrl);
+  const musicYoutubeId = extractYoutubeId(musicYoutubeUrl);
   const videoContainerRef = useRef<HTMLDivElement>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const noiseIframeRef = useRef<HTMLIFrameElement>(null);
+  const musicIframeRef = useRef<HTMLIFrameElement>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [blackBackgroundMode, setBlackBackgroundMode] = useState(false);
-  const [whiteNoiseEnabled, setWhiteNoiseEnabled] = useState(false);
-  const [whiteNoiseVolume, setWhiteNoiseVolume] = useState(0.15);
-  const audioContextRef = useRef<AudioContext | null>(null);
-  const whiteNoiseNodeRef = useRef<AudioBufferSourceNode | null>(null);
-  const gainNodeRef = useRef<GainNode | null>(null);
 
-  // White noise generator - no dependencies to prevent recreation
-  const startWhiteNoise = useCallback(() => {
-    if (audioContextRef.current) return;
-
-    const audioContext = new (window.AudioContext || (window as typeof window & { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
-    audioContextRef.current = audioContext;
-
-    // Create a longer buffer for smoother looping (5 seconds)
-    const bufferSize = audioContext.sampleRate * 5;
-    const buffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
-    const data = buffer.getChannelData(0);
-
-    // Generate brown noise (more bass, like ocean/wind)
-    let lastOut = 0;
-    for (let i = 0; i < bufferSize; i++) {
-      const white = Math.random() * 2 - 1;
-      lastOut = (lastOut + (0.02 * white)) / 1.02;
-      data[i] = lastOut * 3.5; // Amplify since brown noise is quieter
-    }
-
-    const whiteNoise = audioContext.createBufferSource();
-    whiteNoise.buffer = buffer;
-    whiteNoise.loop = true;
-
-    // Low-pass filter to boost bass frequencies
-    const lowPassFilter = audioContext.createBiquadFilter();
-    lowPassFilter.type = 'lowpass';
-    lowPassFilter.frequency.value = 500; // Cut frequencies above 500Hz
-    lowPassFilter.Q.value = 0.7;
-
-    // High-shelf to further reduce highs
-    const highShelf = audioContext.createBiquadFilter();
-    highShelf.type = 'highshelf';
-    highShelf.frequency.value = 800;
-    highShelf.gain.value = -6; // Reduce highs by 6dB
-
-    // Low-shelf to boost bass
-    const lowShelf = audioContext.createBiquadFilter();
-    lowShelf.type = 'lowshelf';
-    lowShelf.frequency.value = 200;
-    lowShelf.gain.value = 6; // Boost lows by 6dB
-
-    const gainNode = audioContext.createGain();
-    gainNode.gain.value = 0.15;
-
-    // Chain: noise -> lowpass -> highshelf -> lowshelf -> gain -> output
-    whiteNoise.connect(lowPassFilter);
-    lowPassFilter.connect(highShelf);
-    highShelf.connect(lowShelf);
-    lowShelf.connect(gainNode);
-    gainNode.connect(audioContext.destination);
-    whiteNoise.start();
-
-    whiteNoiseNodeRef.current = whiteNoise;
-    gainNodeRef.current = gainNode;
-  }, []);
-
-  const stopWhiteNoise = useCallback(() => {
-    if (whiteNoiseNodeRef.current) {
-      whiteNoiseNodeRef.current.stop();
-      whiteNoiseNodeRef.current = null;
-    }
-    if (audioContextRef.current) {
-      audioContextRef.current.close();
-      audioContextRef.current = null;
-    }
-    gainNodeRef.current = null;
-  }, []);
-
-  // Toggle white noise - only start/stop on enable/disable, not on other changes
-  useEffect(() => {
-    if (whiteNoiseEnabled && meditationMode) {
-      startWhiteNoise();
-    } else {
-      stopWhiteNoise();
-    }
-    return () => stopWhiteNoise();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [whiteNoiseEnabled, meditationMode]);
-
-  // Update volume smoothly without restart
-  useEffect(() => {
-    if (gainNodeRef.current) {
-      // Use exponential ramp for smoother volume changes
-      gainNodeRef.current.gain.setTargetAtTime(
-        whiteNoiseVolume,
-        gainNodeRef.current.context.currentTime,
-        0.1
-      );
-    }
-  }, [whiteNoiseVolume]);
-
-  // Control YouTube player
-  const controlYoutube = useCallback((action: 'play' | 'pause') => {
-    if (iframeRef.current?.contentWindow) {
+  // Control YouTube player - play/pause
+  const controlYoutube = useCallback((iframe: HTMLIFrameElement | null, action: 'play' | 'pause') => {
+    if (iframe?.contentWindow) {
       const command = action === 'play' ? 'playVideo' : 'pauseVideo';
-      iframeRef.current.contentWindow.postMessage(
+      iframe.contentWindow.postMessage(
         JSON.stringify({ event: 'command', func: command }),
         '*'
       );
     }
   }, []);
 
-  // Sync YouTube with TTS play state
-  useEffect(() => {
-    if (youtubeId) {
-      controlYoutube(isPlaying ? 'play' : 'pause');
+  // Control YouTube player - volume (0-100)
+  const setYoutubeVolume = useCallback((iframe: HTMLIFrameElement | null, vol: number) => {
+    if (iframe?.contentWindow) {
+      iframe.contentWindow.postMessage(
+        JSON.stringify({ event: 'command', func: 'setVolume', args: [vol] }),
+        '*'
+      );
     }
-  }, [isPlaying, youtubeId, controlYoutube]);
+  }, []);
+
+  // Sync all YouTube players with TTS play state
+  useEffect(() => {
+    const action = isPlaying ? 'play' : 'pause';
+    if (youtubeId) controlYoutube(iframeRef.current, action);
+    if (noiseYoutubeId) controlYoutube(noiseIframeRef.current, action);
+    if (musicYoutubeId) controlYoutube(musicIframeRef.current, action);
+  }, [isPlaying, youtubeId, noiseYoutubeId, musicYoutubeId, controlYoutube]);
+
+  // Update noise YouTube volume
+  useEffect(() => {
+    if (noiseYoutubeId) {
+      setYoutubeVolume(noiseIframeRef.current, Math.round(noiseVolume * 100));
+    }
+  }, [noiseVolume, noiseYoutubeId, setYoutubeVolume]);
+
+  // Update music YouTube volume
+  useEffect(() => {
+    if (musicYoutubeId) {
+      setYoutubeVolume(musicIframeRef.current, Math.round(musicVolume * 100));
+    }
+  }, [musicVolume, musicYoutubeId, setYoutubeVolume]);
 
   const handlePlayPause = useCallback(() => {
     if (isPlaying) {
@@ -355,35 +303,80 @@ export function VoiceSettings({
           </p>
         )}
 
-        {/* White noise option */}
+        {/* Audio backgrounds - Noise and Music YouTube */}
         {meditationMode && (
-          <div className="mt-3 flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={whiteNoiseEnabled}
-                onChange={(e) => setWhiteNoiseEnabled(e.target.checked)}
-                className="w-4 h-4 rounded cursor-pointer"
-              />
-              <span className="text-xs md:text-sm font-medium transition-colors" style={{ color: 'var(--label-text)' }}>
-                🔊 White noise
-              </span>
-            </label>
-            {whiteNoiseEnabled && (
-              <div className="flex items-center gap-2 flex-1 max-w-xs">
-                <span className="text-xs transition-colors whitespace-nowrap" style={{ color: 'var(--text-secondary)' }}>Vol:</span>
+          <div className="mt-3 space-y-3">
+            {/* Noise YouTube */}
+            <div>
+              <label className="block text-xs md:text-sm font-medium mb-1 transition-colors" style={{ color: 'var(--label-text)' }}>
+                🔊 Som ambiente (YouTube)
+              </label>
+              <div className="flex flex-col md:flex-row gap-2">
                 <input
-                  type="range"
-                  min="0.01"
-                  max="0.5"
-                  step="0.01"
-                  value={whiteNoiseVolume}
-                  onChange={(e) => setWhiteNoiseVolume(parseFloat(e.target.value))}
-                  className="flex-1"
+                  type="text"
+                  value={noiseYoutubeUrl}
+                  onChange={(e) => onNoiseYoutubeUrlChange(e.target.value)}
+                  placeholder="Link do YouTube para som ambiente (chuva, natureza, etc)..."
+                  className="flex-1 p-2 text-xs md:text-sm border rounded transition-colors focus:outline-none"
+                  style={{
+                    backgroundColor: 'var(--input-bg)',
+                    borderColor: 'var(--input-border)',
+                    color: 'var(--input-text)',
+                  }}
                 />
-                <span className="text-xs font-semibold min-w-max transition-colors" style={{ color: 'var(--text-secondary)' }}>{Math.round(whiteNoiseVolume * 100)}%</span>
+                {noiseYoutubeId && (
+                  <div className="flex items-center gap-2 min-w-[140px]">
+                    <span className="text-xs transition-colors whitespace-nowrap" style={{ color: 'var(--text-secondary)' }}>Vol:</span>
+                    <input
+                      type="range"
+                      min="0"
+                      max="1"
+                      step="0.05"
+                      value={noiseVolume}
+                      onChange={(e) => onNoiseVolumeChange(parseFloat(e.target.value))}
+                      className="flex-1"
+                    />
+                    <span className="text-xs font-semibold min-w-[32px] transition-colors" style={{ color: 'var(--text-secondary)' }}>{Math.round(noiseVolume * 100)}%</span>
+                  </div>
+                )}
               </div>
-            )}
+            </div>
+
+            {/* Music YouTube */}
+            <div>
+              <label className="block text-xs md:text-sm font-medium mb-1 transition-colors" style={{ color: 'var(--label-text)' }}>
+                🎵 Música de fundo (YouTube)
+              </label>
+              <div className="flex flex-col md:flex-row gap-2">
+                <input
+                  type="text"
+                  value={musicYoutubeUrl}
+                  onChange={(e) => onMusicYoutubeUrlChange(e.target.value)}
+                  placeholder="Link do YouTube para música (lo-fi, new age, etc)..."
+                  className="flex-1 p-2 text-xs md:text-sm border rounded transition-colors focus:outline-none"
+                  style={{
+                    backgroundColor: 'var(--input-bg)',
+                    borderColor: 'var(--input-border)',
+                    color: 'var(--input-text)',
+                  }}
+                />
+                {musicYoutubeId && (
+                  <div className="flex items-center gap-2 min-w-[140px]">
+                    <span className="text-xs transition-colors whitespace-nowrap" style={{ color: 'var(--text-secondary)' }}>Vol:</span>
+                    <input
+                      type="range"
+                      min="0"
+                      max="1"
+                      step="0.05"
+                      value={musicVolume}
+                      onChange={(e) => onMusicVolumeChange(parseFloat(e.target.value))}
+                      className="flex-1"
+                    />
+                    <span className="text-xs font-semibold min-w-[32px] transition-colors" style={{ color: 'var(--text-secondary)' }}>{Math.round(musicVolume * 100)}%</span>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         )}
 
@@ -575,6 +568,42 @@ export function VoiceSettings({
         )}
       </div>
       <div className="h-8 md:h-4"></div>
+
+      {/* Audio YouTube players - visible small */}
+      {meditationMode && (noiseYoutubeId || musicYoutubeId) && (
+        <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-2">
+          {noiseYoutubeId && (
+            <div>
+              <p className="text-xs mb-1 transition-colors" style={{ color: 'var(--text-secondary)' }}>🔊 Som ambiente</p>
+              <div className="relative" style={{ paddingBottom: '56.25%', height: 0 }}>
+                <iframe
+                  ref={noiseIframeRef}
+                  src={`https://www.youtube.com/embed/${noiseYoutubeId}?autoplay=0&loop=1&playlist=${noiseYoutubeId}&enablejsapi=1`}
+                  title="Noise audio"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  className="absolute top-0 left-0 w-full h-full rounded"
+                  style={{ border: 'none' }}
+                />
+              </div>
+            </div>
+          )}
+          {musicYoutubeId && (
+            <div>
+              <p className="text-xs mb-1 transition-colors" style={{ color: 'var(--text-secondary)' }}>🎵 Música</p>
+              <div className="relative" style={{ paddingBottom: '56.25%', height: 0 }}>
+                <iframe
+                  ref={musicIframeRef}
+                  src={`https://www.youtube.com/embed/${musicYoutubeId}?autoplay=0&loop=1&playlist=${musicYoutubeId}&enablejsapi=1`}
+                  title="Music audio"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  className="absolute top-0 left-0 w-full h-full rounded"
+                  style={{ border: 'none' }}
+                />
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

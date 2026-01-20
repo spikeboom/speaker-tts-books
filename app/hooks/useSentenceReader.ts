@@ -15,6 +15,10 @@ interface PreferencesData {
   meditationMode: boolean;
   meditationPause: number;
   youtubeUrl: string;
+  noiseYoutubeUrl: string;
+  musicYoutubeUrl: string;
+  noiseVolume: number;
+  musicVolume: number;
 }
 
 export function useSentenceReader() {
@@ -32,6 +36,10 @@ export function useSentenceReader() {
   const [meditationMode, setMeditationMode] = useState(false);
   const [meditationPause, setMeditationPause] = useState(2.0);
   const [youtubeUrl, setYoutubeUrl] = useState('');
+  const [noiseYoutubeUrl, setNoiseYoutubeUrl] = useState('');
+  const [musicYoutubeUrl, setMusicYoutubeUrl] = useState('');
+  const [noiseVolume, setNoiseVolume] = useState(0.3);
+  const [musicVolume, setMusicVolume] = useState(0.3);
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
   const characterPositionRef = useRef(0);
   const isPausingRef = useRef(false);
@@ -155,6 +163,18 @@ export function useSentenceReader() {
         if (data.youtube_url) {
           setYoutubeUrl(data.youtube_url);
         }
+        if (data.noise_youtube_url) {
+          setNoiseYoutubeUrl(data.noise_youtube_url);
+        }
+        if (data.music_youtube_url) {
+          setMusicYoutubeUrl(data.music_youtube_url);
+        }
+        if (typeof data.noise_volume === 'number') {
+          setNoiseVolume(data.noise_volume);
+        }
+        if (typeof data.music_volume === 'number') {
+          setMusicVolume(data.music_volume);
+        }
       }
     } catch (err) {
       console.error('Error loading preferences:', err);
@@ -181,6 +201,10 @@ export function useSentenceReader() {
         meditation_mode: preferences.meditationMode ?? meditationMode,
         meditation_pause: preferences.meditationPause ?? meditationPause,
         youtube_url: preferences.youtubeUrl ?? youtubeUrl,
+        noise_youtube_url: preferences.noiseYoutubeUrl ?? noiseYoutubeUrl,
+        music_youtube_url: preferences.musicYoutubeUrl ?? musicYoutubeUrl,
+        noise_volume: preferences.noiseVolume ?? noiseVolume,
+        music_volume: preferences.musicVolume ?? musicVolume,
         updated_at: new Date().toISOString(),
       };
 
@@ -203,7 +227,7 @@ export function useSentenceReader() {
     } catch (error) {
       console.error('Error saving preferences:', error);
     }
-  }, [supabase, rate, pitch, volume, selectedVoice, meditationMode, meditationPause, youtubeUrl]);
+  }, [supabase, rate, pitch, volume, selectedVoice, meditationMode, meditationPause, youtubeUrl, noiseYoutubeUrl, musicYoutubeUrl, noiseVolume, musicVolume]);
 
   // Load preferences on mount
   useEffect(() => {
@@ -593,6 +617,26 @@ export function useSentenceReader() {
     savePreferences({ youtubeUrl: url });
   }, [savePreferences]);
 
+  const handleSetNoiseYoutubeUrl = useCallback((url: string) => {
+    setNoiseYoutubeUrl(url);
+    savePreferences({ noiseYoutubeUrl: url });
+  }, [savePreferences]);
+
+  const handleSetMusicYoutubeUrl = useCallback((url: string) => {
+    setMusicYoutubeUrl(url);
+    savePreferences({ musicYoutubeUrl: url });
+  }, [savePreferences]);
+
+  const handleSetNoiseVolume = useCallback((vol: number) => {
+    setNoiseVolume(vol);
+    savePreferences({ noiseVolume: vol });
+  }, [savePreferences]);
+
+  const handleSetMusicVolume = useCallback((vol: number) => {
+    setMusicVolume(vol);
+    savePreferences({ musicVolume: vol });
+  }, [savePreferences]);
+
   return {
     text,
     setText,
@@ -623,5 +667,13 @@ export function useSentenceReader() {
     setMeditationPause: handleSetMeditationPause,
     youtubeUrl,
     setYoutubeUrl: handleSetYoutubeUrl,
+    noiseYoutubeUrl,
+    setNoiseYoutubeUrl: handleSetNoiseYoutubeUrl,
+    musicYoutubeUrl,
+    setMusicYoutubeUrl: handleSetMusicYoutubeUrl,
+    noiseVolume,
+    setNoiseVolume: handleSetNoiseVolume,
+    musicVolume,
+    setMusicVolume: handleSetMusicVolume,
   };
 }
