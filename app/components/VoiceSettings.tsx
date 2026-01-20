@@ -78,35 +78,62 @@ export function VoiceSettings({
   const whiteNoiseNodeRef = useRef<AudioBufferSourceNode | null>(null);
   const gainNodeRef = useRef<GainNode | null>(null);
 
-  // White noise generator
+  // White noise generator - no dependencies to prevent recreation
   const startWhiteNoise = useCallback(() => {
     if (audioContextRef.current) return;
 
     const audioContext = new (window.AudioContext || (window as typeof window & { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
     audioContextRef.current = audioContext;
 
-    const bufferSize = audioContext.sampleRate * 2;
+    // Create a longer buffer for smoother looping (5 seconds)
+    const bufferSize = audioContext.sampleRate * 5;
     const buffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
     const data = buffer.getChannelData(0);
 
+    // Generate brown noise (more bass, like ocean/wind)
+    let lastOut = 0;
     for (let i = 0; i < bufferSize; i++) {
-      data[i] = Math.random() * 2 - 1;
+      const white = Math.random() * 2 - 1;
+      lastOut = (lastOut + (0.02 * white)) / 1.02;
+      data[i] = lastOut * 3.5; // Amplify since brown noise is quieter
     }
 
     const whiteNoise = audioContext.createBufferSource();
     whiteNoise.buffer = buffer;
     whiteNoise.loop = true;
 
-    const gainNode = audioContext.createGain();
-    gainNode.gain.value = whiteNoiseVolume;
+    // Low-pass filter to boost bass frequencies
+    const lowPassFilter = audioContext.createBiquadFilter();
+    lowPassFilter.type = 'lowpass';
+    lowPassFilter.frequency.value = 500; // Cut frequencies above 500Hz
+    lowPassFilter.Q.value = 0.7;
 
-    whiteNoise.connect(gainNode);
+    // High-shelf to further reduce highs
+    const highShelf = audioContext.createBiquadFilter();
+    highShelf.type = 'highshelf';
+    highShelf.frequency.value = 800;
+    highShelf.gain.value = -6; // Reduce highs by 6dB
+
+    // Low-shelf to boost bass
+    const lowShelf = audioContext.createBiquadFilter();
+    lowShelf.type = 'lowshelf';
+    lowShelf.frequency.value = 200;
+    lowShelf.gain.value = 6; // Boost lows by 6dB
+
+    const gainNode = audioContext.createGain();
+    gainNode.gain.value = 0.15;
+
+    // Chain: noise -> lowpass -> highshelf -> lowshelf -> gain -> output
+    whiteNoise.connect(lowPassFilter);
+    lowPassFilter.connect(highShelf);
+    highShelf.connect(lowShelf);
+    lowShelf.connect(gainNode);
     gainNode.connect(audioContext.destination);
     whiteNoise.start();
 
     whiteNoiseNodeRef.current = whiteNoise;
     gainNodeRef.current = gainNode;
-  }, [whiteNoiseVolume]);
+  }, []);
 
   const stopWhiteNoise = useCallback(() => {
     if (whiteNoiseNodeRef.current) {
@@ -120,7 +147,7 @@ export function VoiceSettings({
     gainNodeRef.current = null;
   }, []);
 
-  // Toggle white noise
+  // Toggle white noise - only start/stop on enable/disable, not on other changes
   useEffect(() => {
     if (whiteNoiseEnabled && meditationMode) {
       startWhiteNoise();
@@ -128,12 +155,18 @@ export function VoiceSettings({
       stopWhiteNoise();
     }
     return () => stopWhiteNoise();
-  }, [whiteNoiseEnabled, meditationMode, startWhiteNoise, stopWhiteNoise]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [whiteNoiseEnabled, meditationMode]);
 
-  // Update volume
+  // Update volume smoothly without restart
   useEffect(() => {
     if (gainNodeRef.current) {
-      gainNodeRef.current.gain.value = whiteNoiseVolume;
+      // Use exponential ramp for smoother volume changes
+      gainNodeRef.current.gain.setTargetAtTime(
+        whiteNoiseVolume,
+        gainNodeRef.current.context.currentTime,
+        0.1
+      );
     }
   }, [whiteNoiseVolume]);
 
