@@ -91,7 +91,7 @@ export function VoiceSettings({
   const noiseIframeRef = useRef<HTMLIFrameElement>(null);
   const musicIframeRef = useRef<HTMLIFrameElement>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [blackBackgroundMode, setBlackBackgroundMode] = useState(false);
+  const [blackBackgroundMode, setBlackBackgroundMode] = useState(true);
 
   // Control YouTube player - play/pause
   const controlYoutube = useCallback((iframe: HTMLIFrameElement | null, action: 'play' | 'pause') => {
@@ -114,13 +114,11 @@ export function VoiceSettings({
     }
   }, []);
 
-  // Sync all YouTube players with TTS play state
+  // Sync only main video YouTube with TTS play state (noise and music play independently)
   useEffect(() => {
     const action = isPlaying ? 'play' : 'pause';
     if (youtubeId) controlYoutube(iframeRef.current, action);
-    if (noiseYoutubeId) controlYoutube(noiseIframeRef.current, action);
-    if (musicYoutubeId) controlYoutube(musicIframeRef.current, action);
-  }, [isPlaying, youtubeId, noiseYoutubeId, musicYoutubeId, controlYoutube]);
+  }, [isPlaying, youtubeId, controlYoutube]);
 
   // Update noise YouTube volume
   useEffect(() => {
