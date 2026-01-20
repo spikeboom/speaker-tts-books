@@ -71,6 +71,71 @@ export function VoiceSettings({
   const videoContainerRef = useRef<HTMLDivElement>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [blackBackgroundMode, setBlackBackgroundMode] = useState(false);
+  const [whiteNoiseEnabled, setWhiteNoiseEnabled] = useState(false);
+  const [whiteNoiseVolume, setWhiteNoiseVolume] = useState(0.15);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const whiteNoiseNodeRef = useRef<AudioBufferSourceNode | null>(null);
+  const gainNodeRef = useRef<GainNode | null>(null);
+
+  // White noise generator
+  const startWhiteNoise = useCallback(() => {
+    if (audioContextRef.current) return;
+
+    const audioContext = new (window.AudioContext || (window as typeof window & { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
+    audioContextRef.current = audioContext;
+
+    const bufferSize = audioContext.sampleRate * 2;
+    const buffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
+    const data = buffer.getChannelData(0);
+
+    for (let i = 0; i < bufferSize; i++) {
+      data[i] = Math.random() * 2 - 1;
+    }
+
+    const whiteNoise = audioContext.createBufferSource();
+    whiteNoise.buffer = buffer;
+    whiteNoise.loop = true;
+
+    const gainNode = audioContext.createGain();
+    gainNode.gain.value = whiteNoiseVolume;
+
+    whiteNoise.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+    whiteNoise.start();
+
+    whiteNoiseNodeRef.current = whiteNoise;
+    gainNodeRef.current = gainNode;
+  }, [whiteNoiseVolume]);
+
+  const stopWhiteNoise = useCallback(() => {
+    if (whiteNoiseNodeRef.current) {
+      whiteNoiseNodeRef.current.stop();
+      whiteNoiseNodeRef.current = null;
+    }
+    if (audioContextRef.current) {
+      audioContextRef.current.close();
+      audioContextRef.current = null;
+    }
+    gainNodeRef.current = null;
+  }, []);
+
+  // Toggle white noise
+  useEffect(() => {
+    if (whiteNoiseEnabled && meditationMode) {
+      startWhiteNoise();
+    } else {
+      stopWhiteNoise();
+    }
+    return () => stopWhiteNoise();
+  }, [whiteNoiseEnabled, meditationMode, startWhiteNoise, stopWhiteNoise]);
+
+  // Update volume
+  useEffect(() => {
+    if (gainNodeRef.current) {
+      gainNodeRef.current.gain.value = whiteNoiseVolume;
+    }
+  }, [whiteNoiseVolume]);
 
   // Control YouTube player
   const controlYoutube = useCallback((action: 'play' | 'pause') => {
@@ -257,42 +322,99 @@ export function VoiceSettings({
           </p>
         )}
 
-        {/* YouTube URL Input */}
+        {/* White noise option */}
+        {meditationMode && (
+          <div className="mt-3 flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={whiteNoiseEnabled}
+                onChange={(e) => setWhiteNoiseEnabled(e.target.checked)}
+                className="w-4 h-4 rounded cursor-pointer"
+              />
+              <span className="text-xs md:text-sm font-medium transition-colors" style={{ color: 'var(--label-text)' }}>
+                🔊 White noise
+              </span>
+            </label>
+            {whiteNoiseEnabled && (
+              <div className="flex items-center gap-2 flex-1 max-w-xs">
+                <span className="text-xs transition-colors whitespace-nowrap" style={{ color: 'var(--text-secondary)' }}>Vol:</span>
+                <input
+                  type="range"
+                  min="0.01"
+                  max="0.5"
+                  step="0.01"
+                  value={whiteNoiseVolume}
+                  onChange={(e) => setWhiteNoiseVolume(parseFloat(e.target.value))}
+                  className="flex-1"
+                />
+                <span className="text-xs font-semibold min-w-max transition-colors" style={{ color: 'var(--text-secondary)' }}>{Math.round(whiteNoiseVolume * 100)}%</span>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Video/Black background options */}
         {meditationMode && (
           <div className="mt-3">
-            <label className="block text-xs md:text-sm font-medium mb-1 transition-colors" style={{ color: 'var(--label-text)' }}>
-              🎬 Vídeo de fundo (YouTube)
+            <label className="flex items-center gap-2 cursor-pointer mb-2">
+              <input
+                type="checkbox"
+                checked={!youtubeUrl && blackBackgroundMode}
+                onChange={(e) => {
+                  if (e.target.checked) {
+                    onYoutubeUrlChange('');
+                    setBlackBackgroundMode(true);
+                  } else {
+                    setBlackBackgroundMode(false);
+                  }
+                }}
+                className="w-4 h-4 rounded cursor-pointer"
+              />
+              <span className="text-xs md:text-sm font-medium transition-colors" style={{ color: 'var(--label-text)' }}>
+                🖤 Apenas fundo preto (sem vídeo)
+              </span>
             </label>
-            <input
-              type="text"
-              value={youtubeUrl}
-              onChange={(e) => onYoutubeUrlChange(e.target.value)}
-              placeholder="Cole o link do YouTube aqui..."
-              className="w-full p-2 text-xs md:text-sm border rounded transition-colors focus:outline-none"
-              style={{
-                backgroundColor: 'var(--input-bg)',
-                borderColor: 'var(--input-border)',
-                color: 'var(--input-text)',
-              }}
-            />
-            {youtubeId && (
+
+            {!blackBackgroundMode && (
+              <>
+                <label className="block text-xs md:text-sm font-medium mb-1 transition-colors" style={{ color: 'var(--label-text)' }}>
+                  🎬 Vídeo de fundo (YouTube)
+                </label>
+                <input
+                  type="text"
+                  value={youtubeUrl}
+                  onChange={(e) => onYoutubeUrlChange(e.target.value)}
+                  placeholder="Cole o link do YouTube aqui..."
+                  className="w-full p-2 text-xs md:text-sm border rounded transition-colors focus:outline-none"
+                  style={{
+                    backgroundColor: 'var(--input-bg)',
+                    borderColor: 'var(--input-border)',
+                    color: 'var(--input-text)',
+                  }}
+                />
+              </>
+            )}
+            {(youtubeId || blackBackgroundMode) && (
               <div
                 ref={videoContainerRef}
                 className={`mt-2 relative ${isFullscreen ? 'flex items-center justify-center' : ''}`}
                 style={{
                   paddingBottom: isFullscreen ? 0 : '56.25%',
                   height: isFullscreen ? '100vh' : 0,
-                  backgroundColor: isFullscreen ? '#000' : 'transparent',
+                  backgroundColor: '#000',
                 }}
               >
-                <iframe
-                  ref={iframeRef}
-                  src={`https://www.youtube.com/embed/${youtubeId}?autoplay=0&loop=1&playlist=${youtubeId}&enablejsapi=1`}
-                  title="YouTube video"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  className={`${isFullscreen ? 'w-full h-full' : 'absolute top-0 left-0 w-full h-full rounded'}`}
-                  style={{ border: 'none' }}
-                />
+                {youtubeId && !blackBackgroundMode && (
+                  <iframe
+                    ref={iframeRef}
+                    src={`https://www.youtube.com/embed/${youtubeId}?autoplay=0&loop=1&playlist=${youtubeId}&enablejsapi=1`}
+                    title="YouTube video"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    className={`${isFullscreen ? 'w-full h-full' : 'absolute top-0 left-0 w-full h-full rounded'}`}
+                    style={{ border: 'none' }}
+                  />
+                )}
                 {/* Sentence overlay - centered */}
                 {currentSentence && (
                   <div
@@ -302,9 +424,9 @@ export function VoiceSettings({
                     <p
                       className={`text-white font-medium text-center max-w-4xl ${isFullscreen ? 'text-lg md:text-2xl lg:text-4xl' : 'text-xs md:text-sm'}`}
                       style={{
-                        textShadow: '1px 1px 4px rgba(0,0,0,0.9)',
+                        textShadow: blackBackgroundMode ? 'none' : '1px 1px 4px rgba(0,0,0,0.9)',
                         lineHeight: 1.4,
-                        backgroundColor: 'rgba(0,0,0,0.5)',
+                        backgroundColor: blackBackgroundMode ? 'transparent' : 'rgba(0,0,0,0.5)',
                         padding: isFullscreen ? '1rem 1.5rem' : '0.25rem 0.5rem',
                         borderRadius: '0.25rem',
                       }}
