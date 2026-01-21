@@ -683,6 +683,7 @@ export function EpubReader({
                 onNextSentence={nextSentence}
                 currentSentenceIndex={spokenSentenceIndex}
                 totalSentences={sentences.length}
+                sentences={sentences}
               />
             </div>
           </div>

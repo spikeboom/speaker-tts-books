@@ -34,6 +34,7 @@ interface VoiceSettingsProps {
   onNextSentence?: () => void;
   currentSentenceIndex?: number;
   totalSentences?: number;
+  sentences?: string[];
 }
 
 function extractYoutubeId(url: string): string | null {
@@ -81,6 +82,7 @@ export function VoiceSettings({
   onNextSentence,
   currentSentenceIndex = 0,
   totalSentences = 0,
+  sentences = [],
 }: VoiceSettingsProps) {
   const isAndroid = typeof navigator !== 'undefined' && /Android/i.test(navigator.userAgent);
   const youtubeId = extractYoutubeId(youtubeUrl);
@@ -92,6 +94,11 @@ export function VoiceSettings({
   const musicIframeRef = useRef<HTMLIFrameElement>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [blackBackgroundMode, setBlackBackgroundMode] = useState(true);
+  const [showTimeRemaining, setShowTimeRemaining] = useState(false);
+  const [estimatedTimeRemaining, setEstimatedTimeRemaining] = useState('--:--');
+  const startTimeRef = useRef<number | null>(null);
+  const startSentenceIndexRef = useRef<number>(0);
+  const charactersReadRef = useRef<number>(0);
 
   // Control YouTube player - play/pause
   const controlYoutube = useCallback((iframe: HTMLIFrameElement | null, action: 'play' | 'pause') => {
@@ -141,6 +148,80 @@ export function VoiceSettings({
       onPlay?.();
     }
   }, [isPlaying, onPlay, onPause]);
+
+  // Track reading start for time estimation
+  useEffect(() => {
+    if (isPlaying && startTimeRef.current === null) {
+      startTimeRef.current = Date.now();
+      startSentenceIndexRef.current = currentSentenceIndex;
+      // Calculate characters read so far (before current session)
+      charactersReadRef.current = sentences.slice(0, currentSentenceIndex).reduce((acc, s) => acc + s.length, 0);
+    } else if (!isPlaying) {
+      // When paused, update the characters read count
+      if (startTimeRef.current !== null) {
+        charactersReadRef.current = sentences.slice(0, currentSentenceIndex).reduce((acc, s) => acc + s.length, 0);
+      }
+    }
+  }, [isPlaying, currentSentenceIndex, sentences]);
+
+  // Calculate estimated time remaining
+  useEffect(() => {
+    if (!showTimeRemaining || sentences.length === 0) return;
+
+    const updateTimeEstimate = () => {
+      const now = Date.now();
+
+      // Characters already read in all sentences up to current
+      const charsRead = sentences.slice(0, currentSentenceIndex).reduce((acc, s) => acc + s.length, 0);
+
+      // Characters remaining (current sentence partial + future sentences)
+      const charsRemaining = sentences.slice(currentSentenceIndex).reduce((acc, s) => acc + s.length, 0);
+
+      // Calculate reading speed based on elapsed time
+      let charsPerSecond = 15; // Default estimate (~150 words/min with avg 6 chars/word)
+
+      if (startTimeRef.current !== null && charsRead > charactersReadRef.current) {
+        const elapsedSeconds = (now - startTimeRef.current) / 1000;
+        const charsReadThisSession = charsRead - charactersReadRef.current;
+
+        if (elapsedSeconds > 0 && charsReadThisSession > 0) {
+          // Account for meditation pauses
+          const sentencesReadThisSession = currentSentenceIndex - startSentenceIndexRef.current;
+          const pauseTimeThisSession = meditationMode ? sentencesReadThisSession * meditationPause : 0;
+          const actualReadingTime = elapsedSeconds - pauseTimeThisSession;
+
+          if (actualReadingTime > 0) {
+            charsPerSecond = charsReadThisSession / actualReadingTime;
+          }
+        }
+      }
+
+      // Adjust for rate setting
+      charsPerSecond = charsPerSecond * rate;
+
+      // Calculate remaining time
+      const remainingSentences = totalSentences - currentSentenceIndex;
+      const remainingPauseTime = meditationMode ? remainingSentences * meditationPause : 0;
+      const remainingReadTime = charsRemaining / charsPerSecond;
+      const totalRemainingSeconds = remainingReadTime + remainingPauseTime;
+
+      // Format time
+      const minutes = Math.floor(totalRemainingSeconds / 60);
+      const seconds = Math.floor(totalRemainingSeconds % 60);
+
+      if (minutes >= 60) {
+        const hours = Math.floor(minutes / 60);
+        const mins = minutes % 60;
+        setEstimatedTimeRemaining(`${hours}h${mins.toString().padStart(2, '0')}m`);
+      } else {
+        setEstimatedTimeRemaining(`${minutes}:${seconds.toString().padStart(2, '0')}`);
+      }
+    };
+
+    updateTimeEstimate();
+    const interval = setInterval(updateTimeEstimate, 1000);
+    return () => clearInterval(interval);
+  }, [showTimeRemaining, sentences, currentSentenceIndex, totalSentences, meditationMode, meditationPause, rate]);
 
   const toggleFullscreen = useCallback(() => {
     if (!videoContainerRef.current) return;
@@ -516,9 +597,13 @@ export function VoiceSettings({
                     </svg>
                   )}
                 </button>
-                {/* Progress indicator */}
+                {/* Progress indicator - clickable to toggle time remaining */}
                 {totalSentences > 0 && (
-                  <div className={`absolute ${isFullscreen ? 'top-4 left-4' : 'top-2 left-2'}`}>
+                  <button
+                    onClick={() => isFullscreen && setShowTimeRemaining(!showTimeRemaining)}
+                    className={`absolute ${isFullscreen ? 'top-4 left-4 cursor-pointer' : 'top-2 left-2'}`}
+                    title={isFullscreen ? 'Clique para ver tempo restante' : ''}
+                  >
                     <div className="relative">
                       <svg
                         className={`transform -rotate-90 ${isFullscreen ? 'w-14 h-14' : 'w-10 h-10'}`}
@@ -548,11 +633,14 @@ export function VoiceSettings({
                       {/* Text in center */}
                       <div className="absolute inset-0 flex items-center justify-center">
                         <span className={`text-white font-bold ${isFullscreen ? 'text-xs' : 'text-[8px]'}`}>
-                          {currentSentenceIndex + 1}/{totalSentences}
+                          {showTimeRemaining && isFullscreen
+                            ? estimatedTimeRemaining
+                            : `${currentSentenceIndex + 1}/${totalSentences}`
+                          }
                         </span>
                       </div>
                     </div>
-                  </div>
+                  </button>
                 )}
                 {/* Exit fullscreen hint */}
                 {isFullscreen && (
